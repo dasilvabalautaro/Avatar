@@ -20,7 +20,7 @@ if [[ "$dataset" != "$root/data/smoke-procedural" ]]; then
   echo "ERROR: este empaquetador sólo admite $root/data/smoke-procedural" >&2
   exit 2
 fi
-tar -C "$root" -cf "$package" data/smoke-procedural
+COPYFILE_DISABLE=1 tar -C "$root" --exclude='._*' -cf "$package" data/smoke-procedural
 tar -tf "$package" >/dev/null
 (cd "$output_dir" && shasum -a 256 "$(basename "$package")") > "$sums"
 
