@@ -97,7 +97,12 @@ class LocalMicroTrainer:
     ) -> int:
         if not checkpoint_path.is_file():
             raise FileNotFoundError(f"Checkpoint inexistente: {checkpoint_path}")
-        payload: dict[str, Any] = torch.load(checkpoint_path, map_location="cpu")
+        # El checkpoint es creado por este proceso y contiene la configuración
+        # serializada (incluido ``Path``); declarar el modo evita que cambios de
+        # PyTorch alteren el comportamiento de reanudación.
+        payload: dict[str, Any] = torch.load(
+            checkpoint_path, map_location="cpu", weights_only=False
+        )
         if payload.get("manifest_sha256") != manifest_sha256:
             raise ValueError("El checkpoint pertenece a otro manifiesto.")
         model.load_state_dict(payload["model"])
