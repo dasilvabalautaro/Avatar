@@ -62,11 +62,7 @@ class PermissiveLicensePolicy:
                     )
                 )
             if component.has_use_restrictions:
-                findings.append(
-                    LicenseFinding(component.name, "Contiene restricciones de uso.")
-                )
+                findings.append(LicenseFinding(component.name, "Contiene restricciones de uso."))
         if candidate.revision is None:
-            findings.append(
-                LicenseFinding("candidate", "Falta fijar una revisión inmutable.")
-            )
+            findings.append(LicenseFinding("candidate", "Falta fijar una revisión inmutable."))
         return CandidateAudit(candidate.identifier, not findings, tuple(findings))

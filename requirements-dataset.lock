@@ -1,0 +1,3 @@
+# Dependencia aislada para generación del smoke dataset.
+# Instalada con pip --no-cache-dir; no se conservaron descargas.
+Pillow==12.3.0  # License-Expression: MIT-CMU

@@ -20,6 +20,7 @@ tokenizer mínimo → encoder de texto → denoiser de pocos pasos
 Perfiles:
 
 - `micro`: confirma exportación y carga;
+- `bridge`: mide el efecto de cuantización con aproximadamente 8 M de parámetros;
 - `target`: aproxima 135–280 M parámetros;
 - `stress`: identifica el límite del TECNO KM5s.
 
@@ -41,6 +42,9 @@ Perfiles:
 - diez ejecuciones consecutivas;
 - temperatura y estado de throttling;
 - determinismo numérico dentro de tolerancia.
+
+El intervalo de inferencia cubre exclusivamente `session.run`. Checksum,
+serialización, extracción de tensores y posproceso se miden fuera de ese intervalo.
 
 ## Condiciones
 

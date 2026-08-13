@@ -8,9 +8,7 @@ from avatar_face.infrastructure.model_candidate_repository import (
 
 
 def test_repository_loads_project_candidates() -> None:
-    candidates = JsonModelCandidateRepository(
-        Path("configs/model-candidates.json")
-    ).load()
+    candidates = JsonModelCandidateRepository(Path("configs/model-candidates.json")).load()
 
     assert len(candidates) == 9
     assert candidates[0].identifier.startswith("Efficient-Large-Model/")

@@ -19,9 +19,7 @@ def test_avatar_prompt_normalizes_text() -> None:
         ("avatar", 42, 128),
     ],
 )
-def test_avatar_prompt_rejects_invalid_values(
-    text: str, seed: int, image_size: int
-) -> None:
+def test_avatar_prompt_rejects_invalid_values(text: str, seed: int, image_size: int) -> None:
     with pytest.raises(InvalidPromptError):
         AvatarPrompt(text, seed, image_size)
 

@@ -1,20 +1,24 @@
 # AvatarFace
 
 AvatarFace genera rostros de avatares a partir de texto y está diseñado para
-inferencia local en Android. El proyecto se encuentra en la Fase 0: fundamentos,
-arquitectura y definición verificable del dispositivo objetivo.
+inferencia local en Android. Los fundamentos, la auditoría inicial y el spike de
+viabilidad móvil están completos; actualmente se desarrolla la Fase 2 de dataset
+legal, especializado y auditable.
 
 El plan completo está en
 [`docs/plan-proyecto-avatarface.md`](docs/plan-proyecto-avatarface.md).
+El estado exacto para retomar otra sesión está en
+[`docs/HANDOFF.md`](docs/HANDOFF.md).
 
 ## Estado actual
 
 - plataforma de esta etapa: Android;
 - pruebas finales: dispositivo físico conectado por USB y controlado con ADB;
 - Python requerido: 3.11 o superior; se recomienda 3.12 para el stack de ML;
-- runtime Android: pendiente de benchmark entre ExecuTorch, ONNX Runtime Mobile
-  y NNAPI;
-- modelo base: pendiente de la compuerta de licencias y del benchmark técnico.
+- runtime provisional: ONNX Runtime CPU con cuantización selectiva;
+- baseline sintético Android: 67.5 ms P50 y 78.1 ms P95 en TECNO KM5s;
+- smoke dataset: 64 avatares procedimentales auditables;
+- modelo entrenable: pendiente de la compuerta de dataset y baseline local.
 
 ## Desarrollo
 
@@ -38,6 +42,8 @@ ruff check .
 mypy src
 avatar-face status --json
 avatar-face audit-candidates --json
+avatar-face generate-smoke-dataset --samples 64 --seed 42
+avatar-face audit-dataset
 ```
 
 No se descargan modelos ni datasets durante la instalación base. Datos, pesos,
