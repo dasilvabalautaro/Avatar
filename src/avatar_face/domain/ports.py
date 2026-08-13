@@ -4,7 +4,12 @@ from pathlib import Path
 from typing import Protocol
 
 from avatar_face.domain.benchmarking import AndroidBenchmarkRequest, AndroidBenchmarkResult
-from avatar_face.domain.dataset import DatasetAuditResult, DatasetGenerationResult
+from avatar_face.domain.dataset import (
+    DatasetAuditResult,
+    DatasetGenerationResult,
+    MicroTrainingConfig,
+    MicroTrainingResult,
+)
 from avatar_face.domain.exporting import ComponentExportResult, FeasibilityExportResult
 from avatar_face.domain.feasibility import FeasibilityProfile
 from avatar_face.domain.models import AndroidEnvironment
@@ -38,6 +43,14 @@ class DatasetAuditor(Protocol):
 
     def audit(self, manifest_path: Path) -> DatasetAuditResult:
         """Recalcula evidencia y aplica la política legal del dataset."""
+        ...
+
+
+class MicroTrainingRunner(Protocol):
+    """Puerto para el microentrenamiento local reanudable."""
+
+    def run(self, config: MicroTrainingConfig) -> MicroTrainingResult:
+        """Ejecuta la cantidad solicitada de pasos y persiste su checkpoint."""
         ...
 
 

@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-import random
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import TypeVar
 
 from PIL import Image, ImageDraw
 
 from avatar_face.domain.dataset import DatasetGenerationResult, DatasetSample
+
+T = TypeVar("T")
 
 
 def _sha256(path: Path) -> str:
@@ -45,10 +47,9 @@ class ProceduralAvatarDatasetGenerator:
 
         records = []
         for index in range(samples):
-            sample_random = random.Random(seed + index * 7_919)
             identifier = f"avatar-{index:05d}"
             image_path = images_directory / f"{identifier}.png"
-            attributes = self._draw(image_path, sample_random)
+            attributes = self._draw(image_path, index, seed)
             split = "test" if index % 10 == 0 else "validation" if index % 10 == 1 else "train"
             caption = self._caption(attributes)
             records.append(
@@ -73,7 +74,7 @@ class ProceduralAvatarDatasetGenerator:
             "dataset": {
                 "name": "avatarface-smoke-procedural",
                 "version": "1.0.0",
-                "generator": "avatarface-procedural-v1",
+                "generator": "avatarface-procedural-v2",
                 "seed": seed,
                 "image_size": self.image_size,
                 "license_id": "CC0-1.0",
@@ -102,7 +103,7 @@ class ProceduralAvatarDatasetGenerator:
             _sha256(manifest_path),
         )
 
-    def _draw(self, path: Path, generator: random.Random) -> dict[str, str]:
+    def _draw(self, path: Path, index: int, seed: int) -> dict[str, str]:
         backgrounds = {
             "coral": "#F6A89E",
             "mint": "#A8E6CF",
@@ -132,18 +133,52 @@ class ProceduralAvatarDatasetGenerator:
             "green": "#4F7A55",
             "gray": "#667078",
         }
-        background_name, background = generator.choice(tuple(backgrounds.items()))
-        skin_name, skin = generator.choice(tuple(skin_tones.items()))
-        hair_name, hair = generator.choice(tuple(hair_colors.items()))
-        eye_name, eye = generator.choice(tuple(eye_colors.items()))
-        expression = generator.choice(("smiling", "calm", "happy", "confident"))
-        accessory = generator.choice(("none", "round glasses", "earrings", "freckles"))
-        hair_style = generator.choice(("short", "curly", "side-parted", "bob"))
+        background_name, background = self._stratified_choice(
+            tuple(backgrounds.items()), index, seed, 3
+        )
+        skin_name, skin = self._stratified_choice(tuple(skin_tones.items()), index, seed, 5)
+        hair_name, hair = self._stratified_choice(tuple(hair_colors.items()), index, seed, 7)
+        eye_name, eye = self._stratified_choice(tuple(eye_colors.items()), index, seed, 11)
+        expression = self._stratified_choice(
+            ("smiling", "calm", "happy", "confident"), index, seed, 13
+        )
+        accessory = self._stratified_choice(
+            ("none", "round glasses", "earrings", "freckles"), index, seed, 17
+        )
+        hair_style = self._stratified_choice(
+            ("short", "curly", "side-parted", "bob"), index, seed, 19
+        )
+        face_shape = self._stratified_choice(("round", "oval", "square", "heart"), index, seed, 23)
+        brow_style = self._stratified_choice(("arched", "straight", "soft"), index, seed, 29)
+        nose_style = self._stratified_choice(("small", "straight", "button"), index, seed, 31)
 
         image = Image.new("RGB", (self.image_size, self.image_size), background)
         draw = ImageDraw.Draw(image)
         draw.rounded_rectangle((105, 184, 151, 246), radius=18, fill=skin)
-        draw.ellipse((48, 68, 208, 226), fill=skin, outline="#4A3030", width=3)
+        if face_shape == "round":
+            draw.ellipse((48, 68, 208, 226), fill=skin, outline="#4A3030", width=3)
+        elif face_shape == "oval":
+            draw.ellipse((58, 58, 198, 232), fill=skin, outline="#4A3030", width=3)
+        elif face_shape == "square":
+            draw.rounded_rectangle(
+                (54, 68, 202, 224), radius=34, fill=skin, outline="#4A3030", width=3
+            )
+        else:
+            draw.polygon(
+                (
+                    (128, 226),
+                    (60, 139),
+                    (68, 84),
+                    (108, 64),
+                    (128, 91),
+                    (148, 64),
+                    (188, 84),
+                    (196, 139),
+                ),
+                fill=skin,
+                outline="#4A3030",
+                width=3,
+            )
         draw.ellipse((39, 117, 61, 162), fill=skin)
         draw.ellipse((195, 117, 217, 162), fill=skin)
 
@@ -162,9 +197,21 @@ class ProceduralAvatarDatasetGenerator:
             draw.ellipse((eye_x - 14, 123, eye_x + 14, 141), fill="#FFFDF8")
             draw.ellipse((eye_x - 6, 126, eye_x + 6, 138), fill=eye)
             draw.ellipse((eye_x - 2, 129, eye_x + 2, 135), fill="#171417")
-        draw.arc((78, 109, 110, 128), 195, 345, fill=hair, width=4)
-        draw.arc((146, 109, 178, 128), 195, 345, fill=hair, width=4)
-        draw.line((128, 139, 123, 164, 132, 164), fill="#9A624F", width=3)
+        if brow_style == "arched":
+            draw.arc((78, 109, 110, 128), 195, 345, fill=hair, width=4)
+            draw.arc((146, 109, 178, 128), 195, 345, fill=hair, width=4)
+        elif brow_style == "straight":
+            draw.line((79, 117, 110, 114), fill=hair, width=4)
+            draw.line((146, 114, 177, 117), fill=hair, width=4)
+        else:
+            draw.arc((78, 112, 110, 127), 200, 340, fill=hair, width=3)
+            draw.arc((146, 112, 178, 127), 200, 340, fill=hair, width=3)
+        if nose_style == "small":
+            draw.line((128, 142, 124, 161, 131, 161), fill="#9A624F", width=3)
+        elif nose_style == "straight":
+            draw.line((128, 139, 128, 165), fill="#9A624F", width=3)
+        else:
+            draw.ellipse((122, 157, 134, 168), outline="#9A624F", width=3)
 
         if expression in {"smiling", "happy"}:
             draw.arc((103, 159, 153, 197), 10, 170, fill="#7D3340", width=5)
@@ -189,10 +236,20 @@ class ProceduralAvatarDatasetGenerator:
             "skin_tone": skin_name,
             "hair_color": hair_name,
             "hair_style": hair_style,
+            "face_shape": face_shape,
+            "brow_style": brow_style,
+            "nose_style": nose_style,
             "eye_color": eye_name,
             "expression": expression,
             "accessory": accessory,
         }
+
+    @staticmethod
+    def _stratified_choice(values: tuple[T, ...], index: int, seed: int, stride: int) -> T:
+        """Distribuye cada categoría con diferencia máxima de una muestra."""
+        size = len(values)
+        cycle, position = divmod(index, size)
+        return values[(position + cycle * stride + seed) % size]
 
     @staticmethod
     def _caption(attributes: dict[str, str]) -> str:
@@ -203,7 +260,8 @@ class ProceduralAvatarDatasetGenerator:
         )
         return (
             f"flat vector avatar face, {attributes['expression']} expression, "
-            f"{attributes['skin_tone']} skin tone, {attributes['hair_style']} "
+            f"{attributes['face_shape']} face, {attributes['skin_tone']} skin tone, "
+            f"{attributes['hair_style']} "
             f"{attributes['hair_color']} hair, {attributes['eye_color']} eyes"
             f"{accessory}, {attributes['background']} background"
         )

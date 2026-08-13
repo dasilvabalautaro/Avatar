@@ -4,7 +4,9 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+
+from PIL import Image
 
 from avatar_face.domain.dataset import DatasetAuditResult, DatasetSample
 
@@ -15,6 +17,29 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _perceptual_signature(path: Path) -> tuple[int, tuple[int, ...]]:
+    """Firma RGB compacta: hash de estructura y miniatura para confirmar similitud."""
+    with Image.open(path) as image:
+        reduced = image.convert("RGB").resize((16, 16), Image.Resampling.LANCZOS)
+        pixels = cast(list[tuple[int, int, int]], list(reduced.get_flattened_data()))
+    channels = tuple(tuple(pixel[channel] for pixel in pixels) for channel in range(3))
+    perceptual_hash = sum(
+        1 << (channel * 64 + index)
+        for channel, values in enumerate(channels)
+        for index, value in enumerate(values[:64])
+        if value >= sum(values) / len(values)
+    )
+    return perceptual_hash, tuple(value for pixel in pixels for value in pixel)
+
+
+def _hamming_distance(left: int, right: int) -> int:
+    return (left ^ right).bit_count()
+
+
+def _mean_pixel_distance(left: tuple[int, ...], right: tuple[int, ...]) -> float:
+    return sum(abs(first - second) for first, second in zip(left, right, strict=True)) / len(left)
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +72,7 @@ class JsonDatasetAuditor:
             )
 
         hashes = []
+        perceptual_hashes: list[tuple[str, int, tuple[int, ...]]] = []
         identifiers = set()
         for index, raw in enumerate(raw_samples):
             if not isinstance(raw, dict):
@@ -84,10 +110,40 @@ class JsonDatasetAuditor:
             if actual_hash != sample.sha256:
                 findings.append(f"Hash no coincide: {sample.image}.")
             hashes.append(actual_hash)
+            perceptual_hash, thumbnail = _perceptual_signature(image_path)
+            perceptual_hashes.append((sample.image, perceptual_hash, thumbnail))
 
         unique_hashes = len(set(hashes))
         if unique_hashes != len(hashes):
             findings.append("Existen imágenes duplicadas por SHA-256.")
+        for left, right, distance in _similar_pairs(perceptual_hashes):
+            findings.append(
+                f"Similitud perceptual excesiva ({distance} bits): {left} y {right}."
+            )
         return DatasetAuditResult(
             str(manifest), not findings, len(raw_samples), unique_hashes, tuple(findings)
         )
+
+
+def _similar_pairs(
+    hashes: list[tuple[str, int, tuple[int, ...]]],
+) -> tuple[tuple[str, str, int], ...]:
+    """Compara sólo candidatos que comparten una banda del pHash RGB."""
+    buckets: dict[tuple[int, int], list[tuple[str, int, tuple[int, ...]]]] = {}
+    pairs: set[tuple[str, str, int]] = set()
+    for path, value, thumbnail in hashes:
+        candidates: dict[str, tuple[int, tuple[int, ...]]] = {}
+        for band in range(12):
+            key = (band, (value >> (band * 16)) & 0xFFFF)
+            candidates.update(
+                {
+                    candidate_path: (candidate_value, candidate_thumbnail)
+                    for candidate_path, candidate_value, candidate_thumbnail in buckets.get(key, [])
+                }
+            )
+            buckets.setdefault(key, []).append((path, value, thumbnail))
+        for candidate_path, (candidate_value, candidate_thumbnail) in candidates.items():
+            distance = _hamming_distance(value, candidate_value)
+            if distance <= 3 and _mean_pixel_distance(thumbnail, candidate_thumbnail) <= 2.0:
+                pairs.add((candidate_path, path, distance))
+    return tuple(sorted(pairs))

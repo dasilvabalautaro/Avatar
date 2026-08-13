@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
@@ -15,7 +16,9 @@ from avatar_face.application.generate_smoke_dataset import GenerateSmokeDataset
 from avatar_face.application.inspect_android import InspectAndroidEnvironment
 from avatar_face.application.quantize_feasibility import QuantizeFeasibilityModel
 from avatar_face.application.run_android_benchmark import RunAndroidBenchmark
+from avatar_face.application.run_microtraining import RunLocalMicroTraining
 from avatar_face.domain.benchmarking import AndroidBenchmarkRequest
+from avatar_face.domain.dataset import DatasetLoadConfig, MicroTrainingConfig
 from avatar_face.domain.feasibility import FEASIBILITY_PROFILES, get_feasibility_profile
 from avatar_face.domain.licensing import PermissiveLicensePolicy
 from avatar_face.domain.models import AvatarPrompt, InvalidPromptError
@@ -106,6 +109,35 @@ def _parser() -> argparse.ArgumentParser:
     )
     dataset_audit.add_argument(
         "--manifest", type=Path, default=Path("data/smoke-procedural/manifest.json")
+    )
+
+    training = commands.add_parser(
+        "train-smoke", help="Ejecuta un microentrenamiento local y reanudable sobre el manifiesto."
+    )
+    training.add_argument(
+        "--manifest", type=Path, default=Path("data/smoke-procedural/manifest.json")
+    )
+    training.add_argument("--output-dir", type=Path, default=Path("artifacts/training"))
+    training.add_argument("--batch-size", type=int, default=4)
+    training.add_argument("--steps", type=int, default=5)
+    training.add_argument("--learning-rate", type=float, default=1e-3)
+    training.add_argument("--seed", type=int, default=42)
+    training.add_argument("--resume", action="store_true")
+
+    vast = commands.add_parser(
+        "preflight-vast",
+        help="Valida el host, dependencias y paquete antes de un smoke test en Vast.ai.",
+    )
+    vast.add_argument(
+        "--manifest", type=Path, default=Path("data/smoke-procedural/manifest.json")
+    )
+    vast.add_argument("--package-dir", type=Path, default=Path("transfer"))
+    vast.add_argument("--min-vram-gib", type=float, default=16.0)
+    vast.add_argument("--min-free-disk-gib", type=float, default=50.0)
+    vast.add_argument(
+        "--local",
+        action="store_true",
+        help="Omite CUDA para validar el paquete en macOS/Linux local; nunca apto para entrenar.",
     )
     return parser
 
@@ -275,6 +307,56 @@ def _audit_dataset(manifest_path: Path) -> int:
     return 0 if result.approved else 3
 
 
+def _train_smoke(
+    manifest_path: Path,
+    output_directory: Path,
+    batch_size: int,
+    steps: int,
+    learning_rate: float,
+    seed: int,
+    resume: bool,
+) -> int:
+    from avatar_face.infrastructure.training.microtrainer import LocalMicroTrainer
+
+    config = MicroTrainingConfig(
+        dataset=DatasetLoadConfig(manifest_path, batch_size=batch_size, seed=seed),
+        output_directory=output_directory,
+        steps=steps,
+        learning_rate=learning_rate,
+        seed=seed,
+        resume=resume,
+    )
+    result = RunLocalMicroTraining(LocalMicroTrainer()).execute(config)
+    print(json.dumps(asdict(result), indent=2, ensure_ascii=False, default=str))
+    return 0
+
+
+def _preflight_vast(
+    manifest_path: Path,
+    package_directory: Path,
+    min_vram_gib: float,
+    min_free_disk_gib: float,
+    local: bool,
+) -> int:
+    """Delega en un script sin efectos secundarios ni inicio de entrenamiento."""
+    script = Path(__file__).resolve().parents[3] / "scripts" / "preflight-vast.sh"
+    command = [
+        str(script),
+        "--manifest",
+        str(manifest_path),
+        "--package-dir",
+        str(package_directory),
+        "--min-vram-gib",
+        str(min_vram_gib),
+        "--min-free-disk-gib",
+        str(min_free_disk_gib),
+    ]
+    if local:
+        command.append("--local")
+    result = subprocess.run(command, check=False)
+    return result.returncode
+
+
 def main(arguments: Sequence[str] | None = None) -> int:
     parsed = _parser().parse_args(arguments)
     if parsed.command == "status":
@@ -312,6 +394,24 @@ def main(arguments: Sequence[str] | None = None) -> int:
         )
     if parsed.command == "audit-dataset":
         return _audit_dataset(parsed.manifest)
+    if parsed.command == "train-smoke":
+        return _train_smoke(
+            parsed.manifest,
+            parsed.output_dir,
+            parsed.batch_size,
+            parsed.steps,
+            parsed.learning_rate,
+            parsed.seed,
+            parsed.resume,
+        )
+    if parsed.command == "preflight-vast":
+        return _preflight_vast(
+            parsed.manifest,
+            parsed.package_dir,
+            parsed.min_vram_gib,
+            parsed.min_free_disk_gib,
+            parsed.local,
+        )
     raise AssertionError(f"Comando no implementado: {parsed.command}")
 
 

@@ -5,7 +5,7 @@
 | O-01 | Validar exportación con un modelo mínimo antes del entrenamiento serio | La exportabilidad es un riesgo alto | Alto | Medio | P0 | Pendiente |
 | O-02 | Presupuestar parámetros por encoder, denoiser y autoencoder | El encoder puede dominar el paquete | Alto | Bajo | P0 | Pendiente |
 | O-03 | Usar 256 × 256 como perfil obligatorio inicial | Reduce cómputo y memoria frente a 512 | Alto | Bajo | P0 | Aceptado |
-| O-04 | Congelar prompts y seeds de regresión desde el baseline | Permite atribuir cambios de calidad | Alto | Bajo | P0 | Pendiente |
+| O-04 | Congelar prompts y seeds de regresión desde el baseline | Permite atribuir cambios de calidad | Alto | Bajo | P0 | Completado: `configs/regression-fixtures.json` |
 | O-05 | Descargar y restaurar paquetes de uno en uno | Reduce el pico de disco en Vast.ai | Medio | Bajo | P1 | Aceptado |
 | O-06 | Comparar INT8 antes de invertir en INT4 | INT4 puede no acelerar el backend real | Alto | Medio | P0 | Aceptado |
 | O-07 | Medir cold y warm start por separado | La carga puede ocultar el costo de inferencia | Medio | Bajo | P1 | Pendiente |

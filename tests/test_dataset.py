@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -55,3 +57,35 @@ def test_dataset_audit_detects_modified_image(tmp_path: Path) -> None:
 
     assert not audit.approved
     assert any("Hash no coincide" in finding for finding in audit.findings)
+
+
+def test_dataset_audit_detects_perceptually_identical_images(tmp_path: Path) -> None:
+    result = GenerateSmokeDataset(ProceduralAvatarDatasetGenerator()).execute(
+        str(tmp_path / "dataset"), 10, 7
+    )
+    manifest_path = Path(result.manifest_path)
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    first = manifest_path.parent / payload["samples"][0]["image"]
+    second = manifest_path.parent / payload["samples"][1]["image"]
+    second.write_bytes(first.read_bytes())
+    payload["samples"][1]["sha256"] = hashlib.sha256(second.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    audit = JsonDatasetAuditor().audit(manifest_path)
+
+    assert not audit.approved
+    assert any("Similitud perceptual excesiva" in finding for finding in audit.findings)
+
+
+def test_procedural_dataset_balances_primary_strata(tmp_path: Path) -> None:
+    result = GenerateSmokeDataset(ProceduralAvatarDatasetGenerator()).execute(
+        str(tmp_path / "dataset"), 64, 42
+    )
+    payload = json.loads(Path(result.manifest_path).read_text(encoding="utf-8"))
+
+    for attribute in ("skin_tone", "hair_style", "expression", "accessory", "face_shape"):
+        counts: dict[str, int] = {}
+        for sample in payload["samples"]:
+            value = sample["attributes"][attribute]
+            counts[value] = counts.get(value, 0) + 1
+        assert max(counts.values()) - min(counts.values()) <= 1

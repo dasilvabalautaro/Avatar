@@ -18,7 +18,21 @@ El estado exacto para retomar otra sesión está en
 - runtime provisional: ONNX Runtime CPU con cuantización selectiva;
 - baseline sintético Android: 67.5 ms P50 y 78.1 ms P95 en TECNO KM5s;
 - smoke dataset: 64 avatares procedimentales auditables;
-- modelo entrenable: pendiente de la compuerta de dataset y baseline local.
+- plumbing entrenable: loader por manifiesto y microentrenamiento local reanudable verificados;
+- modelo generativo entrenable: pendiente de ampliar y aprobar el dataset.
+
+Los inputs de regresión (captions, prompts y seeds) están congelados en
+[`configs/regression-fixtures.json`](configs/regression-fixtures.json). Todo
+cambio intencional debe actualizar ese archivo y su prueba asociada.
+
+## Licencias de publicación
+
+El código y documentación propios se publican bajo
+[Apache-2.0](LICENSE). Las imágenes, captions, atributos y manifiestos del
+dataset procedimental propio están dedicados a CC0-1.0; alcance y confirmación
+en [`docs/dataset/CC0-DEDICATION.md`](docs/dataset/CC0-DEDICATION.md).
+Dependencias, modelos, pesos y activos de terceros conservan sus propias
+licencias y pasan por la compuerta de [`docs/license-policy.md`](docs/license-policy.md).
 
 ## Desarrollo
 

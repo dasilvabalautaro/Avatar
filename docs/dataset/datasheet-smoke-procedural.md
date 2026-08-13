@@ -1,4 +1,4 @@
-# Datasheet: AvatarFace Smoke Procedural v1
+# Datasheet: AvatarFace Smoke Procedural v2
 
 ## Resumen
 
@@ -8,14 +8,14 @@ calidad, realismo o equidad del modelo.
 
 ## Creación
 
-- Generador: `avatarface-procedural-v1`.
+- Generador: `avatarface-procedural-v2`.
 - Resolución: 256 × 256 RGB PNG.
 - Muestras: 64.
 - Train: 50; validation: 7; test: 7.
 - Seed raíz: 42.
 - Tamaño local total: aproximadamente 316 KiB.
 - Manifiesto SHA-256:
-  `0cc3ecb993288b86f17e547411caef860b19e09669e1eac1020e927c0b8aae7c`.
+  `146026fb9c4e99ed92ac7ba359b35ff7c9aee69c5f9fd80f29874cac672b7ae2`.
 
 Las imágenes se dibujan mediante primitivas geométricas propias. No se usan
 fotografías, fuentes, modelos generativos, assets descargados ni identidades
@@ -29,29 +29,34 @@ bandera sintética.
 
 El comando de auditoría recalcula hashes y rechaza rutas inseguras, archivos
 ausentes, identificadores o imágenes duplicadas, licencias no aprobadas y
-muestras que no sean sintéticas.
+muestras que no sean sintéticas. También compara una firma perceptual RGB de
+miniaturas 16 × 16 para detectar similitud no deseada.
 
 ## Cobertura actual
 
-- Seis categorías de tono de piel estilizado: 8–16 ejemplos cada una.
-- Cuatro estilos de cabello: 10–22 ejemplos cada uno.
-- Cuatro expresiones: 13–22 ejemplos cada una.
-- Cuatro estados de accesorios: 11–21 ejemplos cada uno.
+- Seis categorías de tono de piel estilizado: 10–11 ejemplos cada una.
+- Cuatro estilos de cabello, expresiones, accesorios y formas faciales: 16 ejemplos cada uno.
+- Tres variantes de cejas y nariz: 21–22 ejemplos cada una.
 - 64 hashes de imagen únicos.
+- Sin pares perceptualmente similares según la auditoría.
 
-La distribución no está perfectamente balanceada. En la siguiente versión el
-muestreo deberá ser estratificado, no aleatorio, y se ampliarán formas faciales,
-peinados, edades aparentes, cejas, narices y accesorios.
+El muestreo es estratificado y la diferencia de cada categoría primaria no
+supera una muestra. La v2 añade formas faciales, cejas y narices.
 
 ## Licencia y derechos
 
-AvatarFace es el creador de las imágenes y metadatos procedimentales. El
-manifiesto declara la intención de distribuirlos bajo CC0-1.0. Antes de publicar
-el dataset, el titular del proyecto debe confirmar expresamente la dedicación.
+AvatarFace es el creador de las imágenes y metadatos procedimentales. El titular
+del proyecto confirmó su dedicación a CC0-1.0 el 2026-08-13. La declaración,
+su alcance y sus exclusiones están en `docs/dataset/CC0-DEDICATION.md`.
 
 CC0 no elimina derechos de privacidad o imagen de terceras personas; este dataset
 evita ese riesgo porque no representa personas reales. Esta documentación no
 constituye asesoría legal.
+
+La regresión de generación está congelada en
+`configs/regression-fixtures.json`: fija el generador v2, la seed raíz 42, hash
+del manifiesto y captions representativos con sus hashes. No se actualizará por
+regeneración accidental; todo cambio exige revisar su causa y este datasheet.
 
 ## Limitaciones
 

@@ -26,6 +26,10 @@ feasibility = [
 dataset = [
   "Pillow>=10.4,<13",
 ]
+training = [
+  "Pillow>=10.4,<13",
+  "torch==2.2.2",
+]
 
 [project.scripts]
 avatar-face = "avatar_face.presentation.cli:main"

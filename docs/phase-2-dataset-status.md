@@ -16,19 +16,26 @@ hashes únicos y cero hallazgos.
 - Datasheet y matriz de licencias.
 - Pillow fijado en `requirements-dataset.lock` e instalado sin caché de descarga.
 - Inspección visual de muestras y auditoría de cobertura.
+- Loader PyTorch determinista, exclusivo del manifiesto y normalizado a `[-1, 1]`.
+- Preflight de hashes de todas las muestras y verificación opcional al abrirlas.
+- Autoencoder local mínimo con checkpoint, reconstrucción de validation y reanudación.
+- Muestreo estratificado con balance exacto o diferencia máxima de una muestra.
+- Diversidad geométrica: forma facial, cejas y nariz, además de color y accesorios.
+- Detección de similitud perceptual RGB, además de duplicados exactos.
 
 ## Pendiente para cerrar la fase
 
-- Confirmación del titular antes de publicar la dedicación CC0.
-- Definir y aplicar licencia al código completo del repositorio.
-- Diseñar muestreo estratificado para balance exacto.
-- Ampliar diversidad visual y taxonomía de atributos.
 - Incorporar un dataset de calidad mayor manteniendo 100 % de procedencia.
-- Detectar similitud perceptual, además de duplicados exactos.
-- Crear un loader y ejecutar microentrenamiento local.
 
 ## Siguiente compuerta
 
-Implementar el loader reproducible y un autoencoder/decoder smoke entrenable para
-verificar batching, pérdida, checkpoint y reanudación con estas 64 muestras antes
-de usar Vast.ai.
+Las captions/prompts/seeds están congelados y las licencias de publicación están
+formalizadas. Antes de entrenamiento serio queda ampliar el dataset manteniendo
+100 % de procedencia; después puede prepararse el preflight de Vast.ai.
+
+## Regresión congelada
+
+`configs/regression-fixtures.json` fija el generador v2, 64 muestras, seed raíz
+42, hash del manifiesto, ocho captions representativos con sus hashes y cuatro
+prompts con seeds límite. `tests/test_regression_fixtures.py` regenera el
+dataset y rechaza cualquier deriva no declarada.

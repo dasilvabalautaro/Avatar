@@ -20,7 +20,8 @@ Completado:
 - benchmark ADB reproducible con serial explícito;
 - perfilado por componentes y por operador;
 - pipeline móvil selectivo persistente validado en dispositivo;
-- inicio de la Fase 2 formal: smoke dataset procedimental y auditoría.
+- smoke dataset procedimental, auditoría, loader reproducible y
+  microentrenamiento local reanudable.
 
 En curso:
 
@@ -28,8 +29,8 @@ En curso:
 
 Próxima tarea exacta:
 
-> Implementar el loader del manifiesto y un microentrenamiento local reanudable
-> usando `data/smoke-procedural`, antes de preparar Vast.ai.
+> Preparar el `preflight-vast`, sin iniciar entrenamiento costoso. La regresión
+> y las licencias de publicación ya están formalizadas.
 
 ## 2. Repositorio y entorno
 
@@ -56,7 +57,7 @@ deben conservarse.
 
 En el momento de este handoff:
 
-- pytest: 29 pruebas superadas;
+- pytest: 38 pruebas superadas;
 - Ruff: sin hallazgos;
 - mypy estricto: sin errores en 33 archivos fuente;
 - Gradle `:app:assembleDebug`: exitoso;
@@ -164,10 +165,15 @@ Contenido generado:
 - train 50, validation 7, test 7;
 - manifiesto: `data/smoke-procedural/manifest.json`;
 - SHA-256 del manifiesto:
-  `0cc3ecb993288b86f17e547411caef860b19e09669e1eac1020e927c0b8aae7c`;
+  `146026fb9c4e99ed92ac7ba359b35ff7c9aee69c5f9fd80f29874cac672b7ae2`;
 - tamaño aproximado: 316 KiB;
 - 64 hashes de imagen únicos;
 - sin personas reales, modelos generativos ni assets externos.
+
+El loader consume exclusivamente el manifiesto y el preflight valida los hashes
+de todas las muestras. La corrida local ejecutó 5 pasos y fue reanudada hasta el
+paso 7 con el mismo hash de manifiesto. El checkpoint y la reconstrucción de
+validation viven en `artifacts/training/` y no se versionan.
 
 Reproducción y auditoría:
 
@@ -183,12 +189,12 @@ Reproducción y auditoría:
 ```
 
 La auditoría valida rutas, campos legales, bandera sintética, archivos, hashes,
-IDs y duplicados exactos.
+IDs, duplicados exactos y similitud perceptual RGB.
 
-Licencia prevista para imágenes y metadatos: CC0-1.0. Antes de publicar el
-dataset, el titular del proyecto debe confirmar expresamente la dedicación. El
-repositorio completo todavía no tiene archivo `LICENSE`; esto también bloquea una
-publicación formal, pero no el desarrollo local.
+Imágenes y metadatos procedimentales: dedicados a CC0-1.0 con confirmación del
+titular en `docs/dataset/CC0-DEDICATION.md`. El código y documentación propios
+del repositorio se publican bajo Apache-2.0 (`LICENSE` y `NOTICE`). Estas
+decisiones no cubren dependencias, modelos, pesos ni otros activos de terceros.
 
 Documentos:
 
@@ -270,8 +276,9 @@ Dependencias fijadas:
 5. Normalizar PNG a tensores `[-1, 1]` sin augmentations en la primera prueba.
 6. Añadir pruebas de batch, shape, split, hash alterado y determinismo.
 
-Criterio de salida: un batch train reproducible de forma
-`[B, 3, 256, 256]` y ninguna muestra fuera del manifiesto.
+Criterio de salida alcanzado: un batch train reproducible de forma
+`[B, 3, 256, 256]`, normalizado a `[-1, 1]`, y ninguna muestra fuera del
+manifiesto.
 
 ### P0. Microentrenamiento local reanudable
 
@@ -284,15 +291,14 @@ Criterio de salida: un batch train reproducible de forma
 5. Guardar reconstrucciones de validation bajo `artifacts/`, nunca en Git.
 6. Registrar pérdida y tiempo; calidad visual no es aún compuerta.
 
-Criterio de salida: checkpoint reanudable y ejecución determinista sin error.
+Criterio de salida alcanzado: checkpoint reanudable y ejecución determinista sin
+error. Comando: `avatar-face train-smoke --steps 5`, seguido de
+`avatar-face train-smoke --steps 7 --resume`.
 
 ### P0. Mejorar dataset antes de entrenamiento serio
 
-1. Cambiar muestreo aleatorio por matriz estratificada.
-2. Añadir variaciones de geometría facial y no sólo color/atributos.
-3. Añadir similitud perceptual (pHash u otra técnica), no sólo SHA-256.
-4. Congelar prompts/captions y seeds de regresión.
-5. Confirmar dedicación CC0 y elegir licencia del repositorio antes de publicar.
+1. Muestreo estratificado, geometría facial y similitud perceptual: completados.
+2. Regresión congelada y licencias de publicación formalizadas.
 
 ### P1. Vast.ai, sólo después del smoke local
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 DATASET_LICENSES = frozenset({"CC0-1.0", "CC-BY-4.0"})
@@ -62,3 +63,50 @@ class DatasetAuditResult:
     samples: int
     unique_hashes: int
     findings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DatasetLoadConfig:
+    """Configuración determinista para consumir un manifiesto entrenable."""
+
+    manifest_path: Path
+    split: str = "train"
+    batch_size: int = 4
+    seed: int = 42
+    verify_hashes_on_read: bool = True
+
+    def __post_init__(self) -> None:
+        if self.split not in DATASET_SPLITS:
+            raise ValueError(f"Split no válido: {self.split}.")
+        if self.batch_size < 1:
+            raise ValueError("batch_size debe ser mayor que cero.")
+
+
+@dataclass(frozen=True, slots=True)
+class MicroTrainingConfig:
+    """Parámetros mínimos para comprobar el entrenamiento local reanudable."""
+
+    dataset: DatasetLoadConfig
+    output_directory: Path
+    steps: int = 5
+    learning_rate: float = 1e-3
+    seed: int = 42
+    resume: bool = False
+
+    def __post_init__(self) -> None:
+        if self.steps < 1:
+            raise ValueError("steps debe ser mayor que cero.")
+        if self.learning_rate <= 0:
+            raise ValueError("learning_rate debe ser positiva.")
+
+
+@dataclass(frozen=True, slots=True)
+class MicroTrainingResult:
+    """Evidencia de una ejecución local de entrenamiento."""
+
+    checkpoint_path: Path
+    reconstruction_path: Path
+    manifest_sha256: str
+    start_step: int
+    completed_steps: int
+    final_loss: float
