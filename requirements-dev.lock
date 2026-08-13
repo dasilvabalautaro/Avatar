@@ -1,0 +1,13 @@
+# Entorno de desarrollo verificado con Python 3.12.14 el 2026-08-13.
+# Regenerar de forma controlada al actualizar pyproject.toml.
+iniconfig==2.3.0
+librt==0.15.0
+mypy==1.20.2
+mypy_extensions==1.1.0
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.6.0
+Pygments==2.20.0
+pytest==9.1.1
+ruff==0.16.2
+typing_extensions==4.16.0

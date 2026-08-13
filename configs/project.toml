@@ -1,0 +1,20 @@
+[project]
+name = "AvatarFace"
+environment = "development"
+artifacts_dir = "artifacts"
+
+[android]
+package_name = "com.avatarface.app"
+minimum_api = 26
+compile_api = 35
+primary_abi = "arm64-v8a"
+offline_inference = true
+
+[model]
+required_image_size = 256
+desired_image_size = 512
+maximum_steps = 4
+target_package_megabytes = 250
+maximum_package_megabytes = 400
+maximum_memory_megabytes = 1024
+target_latency_seconds = 5.0

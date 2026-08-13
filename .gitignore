@@ -1,0 +1,29 @@
+.DS_Store
+.env
+.idea/
+.vscode/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Datos, pesos, descargas y artefactos pesados
+data/
+models/
+downloads/
+artifacts/*
+!artifacts/.gitkeep
+transfer/*.tar
+transfer/*.tar.*
+
+# Android
+android/.gradle/
+android/local.properties
+android/**/build/
+*.apk
+*.aab

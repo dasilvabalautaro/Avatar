@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-13",
+  "policy": "docs/license-policy.md",
+  "candidates": [
+    {
+      "identifier": "Efficient-Large-Model/Sana_600M_512px_diffusers",
+      "revision": null,
+      "estimated_download_gib": null,
+      "android_fit_as_is": false,
+      "role": "architecture_reference",
+      "components": [
+        {
+          "name": "SANA transformer and bundled pipeline",
+          "license_id": "Apache-2.0",
+          "source_url": "https://huggingface.co/Efficient-Large-Model/Sana_600M_512px_diffusers"
+        },
+        {
+          "name": "Gemma 2 2B IT text encoder",
+          "license_id": "Gemma",
+          "source_url": "https://huggingface.co/google/gemma-2-2b-it",
+          "has_use_restrictions": true,
+          "notes": "La tarjeta de SANA remite a los términos y política de usos prohibidos de Gemma."
+        }
+      ]
+    },
+    {
+      "identifier": "Efficient-Large-Model/Sana_Sprint_0.6B_1024px",
+      "revision": null,
+      "estimated_download_gib": null,
+      "android_fit_as_is": false,
+      "role": "architecture_reference",
+      "components": [
+        {
+          "name": "SANA-Sprint weights",
+          "license_id": "Apache-2.0",
+          "source_url": "https://huggingface.co/Efficient-Large-Model/Sana_Sprint_0.6B_1024px"
+        },
+        {
+          "name": "Gemma 2 2B IT text encoder",
+          "license_id": "Gemma",
+          "source_url": "https://huggingface.co/google/gemma-2-2b-it",
+          "has_use_restrictions": true
+        }
+      ]
+    },
+    {
+      "identifier": "warp-ai/wuerstchen-v2-pipeline",
+      "revision": null,
+      "estimated_download_gib": 11.4,
+      "android_fit_as_is": false,
+      "role": "teacher_candidate",
+      "components": [
+        {
+          "name": "Würstchen prior and decoder",
+          "license_id": "MIT",
+          "source_url": "https://huggingface.co/warp-ai/wuerstchen"
+        },
+        {
+          "name": "OpenCLIP ViT-bigG/14 text encoder",
+          "license_id": "MIT",
+          "source_url": "https://github.com/mlfoundations/open_clip",
+          "notes": "Confirmar el checkpoint exacto antes de descargar."
+        }
+      ]
+    },
+    {
+      "identifier": "black-forest-labs/FLUX.1-schnell",
+      "revision": "b1a50e71a2b6a3d44dba6dbe541f01d09a10f5d8",
+      "estimated_download_gib": 23.8,
+      "android_fit_as_is": false,
+      "role": "teacher_candidate",
+      "components": [
+        {
+          "name": "FLUX.1-schnell bundled pipeline",
+          "license_id": "Apache-2.0",
+          "source_url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+          "notes": "Repositorio gated; revisar condiciones de acceso antes de descargar."
+        }
+      ]
+    },
+    {
+      "identifier": "fal/AuraFlow",
+      "revision": null,
+      "estimated_download_gib": 65.8,
+      "android_fit_as_is": false,
+      "role": "discarded_for_size",
+      "components": [
+        {
+          "name": "AuraFlow bundled pipeline",
+          "license_id": "Apache-2.0",
+          "source_url": "https://huggingface.co/fal/AuraFlow"
+        }
+      ]
+    },
+    {
+      "identifier": "kandinsky-community/kandinsky-2-2",
+      "revision": null,
+      "estimated_download_gib": null,
+      "android_fit_as_is": false,
+      "role": "discarded_for_size_and_complexity",
+      "components": [
+        {
+          "name": "Kandinsky prior and decoder",
+          "license_id": "Apache-2.0",
+          "source_url": "https://huggingface.co/kandinsky-community/kandinsky-2-2-decoder"
+        }
+      ]
+    },
+    {
+      "identifier": "stabilityai/stable-diffusion-xl-base-1.0",
+      "revision": "47cd5302d866fa60cf8fb81f0e34d42e38f6100c",
+      "estimated_download_gib": 6.94,
+      "android_fit_as_is": false,
+      "role": "license_rejected",
+      "components": [
+        {
+          "name": "SDXL weights",
+          "license_id": "OpenRAIL++-M",
+          "source_url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/LICENSE.md",
+          "has_use_restrictions": true
+        }
+      ]
+    },
+    {
+      "identifier": "PixArt-alpha/PixArt-XL-2-512x512",
+      "revision": null,
+      "estimated_download_gib": 2.45,
+      "android_fit_as_is": false,
+      "role": "license_rejected",
+      "components": [
+        {
+          "name": "PixArt-alpha weights",
+          "license_id": "OpenRAIL++-M",
+          "source_url": "https://huggingface.co/PixArt-alpha/PixArt-XL-2-512x512",
+          "has_use_restrictions": true
+        }
+      ]
+    },
+    {
+      "identifier": "DeepFloyd/IF-I-XL-v1.0",
+      "revision": null,
+      "estimated_download_gib": null,
+      "android_fit_as_is": false,
+      "role": "license_rejected",
+      "components": [
+        {
+          "name": "DeepFloyd IF weights",
+          "license_id": "DeepFloyd-IF",
+          "source_url": "https://huggingface.co/DeepFloyd/IF-I-XL-v1.0",
+          "has_use_restrictions": true
+        }
+      ]
+    }
+  ]
+}
