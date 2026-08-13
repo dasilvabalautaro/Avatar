@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any, cast
 
@@ -126,7 +125,20 @@ class LocalMicroTrainer:
                 "optimizer": optimizer.state_dict(),
                 "completed_steps": completed_steps,
                 "seed": config.seed,
-                "config": asdict(config),
+                "config": {
+                    "dataset": {
+                        "manifest_path": str(config.dataset.manifest_path),
+                        "split": config.dataset.split,
+                        "batch_size": config.dataset.batch_size,
+                        "seed": config.dataset.seed,
+                        "verify_hashes_on_read": config.dataset.verify_hashes_on_read,
+                    },
+                    "output_directory": str(config.output_directory),
+                    "steps": config.steps,
+                    "learning_rate": config.learning_rate,
+                    "seed": config.seed,
+                    "resume": config.resume,
+                },
                 "manifest_sha256": manifest_sha256,
                 "final_loss": final_loss,
                 "torch_rng_state": torch.get_rng_state(),
