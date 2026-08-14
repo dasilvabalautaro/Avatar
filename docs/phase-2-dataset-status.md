@@ -2,9 +2,9 @@
 
 ## Resultado actual
 
-La infraestructura mínima y un smoke dataset procedimental fueron creados. La
-compuerta automatizada aprueba integridad y política técnica: 64 muestras, 64
-hashes únicos y cero hallazgos.
+El smoke dataset queda como evidencia histórica del flujo. La siguiente release
+se genera con una fuente especializada aprobada, un manifiesto v2 y un lock de
+release que fija hashes de manifiesto, imágenes y splits.
 
 ## Completado
 
@@ -23,15 +23,83 @@ hashes únicos y cero hallazgos.
 - Diversidad geométrica: forma facial, cejas y nariz, además de color y accesorios.
 - Detección de similitud perceptual RGB, además de duplicados exactos.
 
-## Pendiente para cerrar la fase
+## Fuente aprobada
 
-- Incorporar un dataset de calidad mayor manteniendo 100 % de procedencia.
+`AF-PROC-001` (avatares procedimentales propios, CC0) es la única fuente
+aprobada para ingestión. Las fuentes por encargo y aportes con consentimiento
+son condicionales y no pueden entrar sin evidencia por activo. La política y el
+registro están en `docs/dataset/source-approval.md` y
+`configs/dataset-sources.json`.
+
+## Ejecución de la release ampliada
+
+```bash
+.venv/bin/avatar-face generate-training-dataset \
+  --output-dir data/training-procedural-v2 --samples 512 --seed 42
+.venv/bin/avatar-face audit-dataset \
+  --manifest data/training-procedural-v2/manifest.json
+.venv/bin/avatar-face freeze-dataset \
+  --manifest data/training-procedural-v2/manifest.json \
+  --version v2.0.0
+.venv/bin/avatar-face train-smoke \
+  --manifest data/training-procedural-v2/manifest.json \
+  --output-dir artifacts/training-procedural-v2 --steps 5
+```
+
+## Release local congelada
+
+Se generó y verificó localmente `v2.0.0` el 2026-08-13:
+
+- 512 PNG; splits `train=408`, `validation=52`, `test=52`;
+- manifiesto SHA-256:
+  `79ecdd3f36301c4462372be35e93f66cee3e52f51d6992050728da8dc84334a2`;
+- auditoría: 512 hashes únicos, cero duplicados/similitudes y cero hallazgos;
+- lock: `data/training-procedural-v2/dataset-v2.0.0.lock.json`;
+- microtraining local: 5 pasos, pérdida final `0.35704541206359863`, checkpoint
+  asociado al hash anterior.
+- paquete: `transfer/avatarface-training-procedural-v2-dataset.tar`, SHA-256
+  `d8fd1b2d284a6fe0c4f77ad96d0869d53daa110709c02dd92301ae2da5907fc9`,
+  2,577,920 bytes; por la regla de transporte (≤100 MB), irá directamente de la
+  máquina local a Vast.ai, sin Drive.
+
+Antes de empaquetar o transferir, y después de descargar en Vast, ejecutar:
+
+```bash
+.venv/bin/avatar-face verify-frozen-dataset \
+  --manifest data/training-procedural-v2/manifest.json \
+  --lock data/training-procedural-v2/dataset-v2.0.0.lock.json
+```
+
+## Smoke remoto y respaldo
+
+El 2026-08-13 se completó la repetición en Vast.ai por transferencia directa
+(el `.tar` mide menos de 100 MB):
+
+- restauración del paquete y verificación del lock: aprobadas;
+- preflight: RTX 4090, 47.37 GiB VRAM visibles por PyTorch, 127.86 GiB libres;
+- smoke training: 5 pasos, pérdida final `0.35704541206359863`, manifiesto
+  `79ecdd3f36301c4462372be35e93f66cee3e52f51d6992050728da8dc84334a2`;
+- respaldo local del checkpoint: SHA-256
+  `69f428fc71b6c77da5ecc25c5c769109ea098877ad57056fd41b50eb5d4b496f`;
+- respaldo local de la reconstrucción: SHA-256
+  `a970d41c4f33c6a92f3608db25847a817823e95543a1551fc8d9460c5b428127`.
+
+El microentrenador es deliberadamente CPU para comprobar el flujo de datos,
+checkpoint y restauración; la GPU fue validada por el preflight, no empleada por
+este autoencoder de humo.
+
+## Siguiente decisión autorizada
+
+La compuerta operativa local → Vast → checkpoint → respaldo está superada. Ya
+puede seleccionarse un modelo base permisivo y redactarse el plan de LoRA/
+fine-tuning en GPU. La ampliación futura con fuentes condicionales se evaluará
+por separado, con evidencia por activo.
 
 ## Siguiente compuerta
 
-Las captions/prompts/seeds están congelados y las licencias de publicación están
-formalizadas. Antes de entrenamiento serio queda ampliar el dataset manteniendo
-100 % de procedencia; después puede prepararse el preflight de Vast.ai.
+La selección de modelo base y el plan LoRA/fine-tuning en GPU permanecen
+bloqueados hasta que se congele una release ampliada y se repita el smoke
+training completo sobre ella.
 
 ## Regresión congelada
 

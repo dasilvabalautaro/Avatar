@@ -25,12 +25,18 @@ Completado:
 
 En curso:
 
-- Fase 2 — dataset legal, especializado y auditable.
+- Fase 2 — dataset legal, especializado y auditable; release procedimental v2
+  congelada y smoke remoto completado.
 
 Próxima tarea exacta:
 
-> Preparar el `preflight-vast`, sin iniciar entrenamiento costoso. La regresión
-> y las licencias de publicación ya están formalizadas.
+> Auditar los candidatos y seleccionar un modelo base permisivo; después,
+> redactar el plan de LoRA/fine-tuning en GPU sobre la release v2 congelada.
+
+Actualización: Würstchen v2 Stage C base fue aprobado, descargado localmente y
+empaquetado con hashes. El próximo paso es subir el paquete a Drive y, en una
+nueva instancia Vast, restaurar/verificar pesos antes de un piloto LoRA de 20
+pasos.
 
 ## 2. Repositorio y entorno
 

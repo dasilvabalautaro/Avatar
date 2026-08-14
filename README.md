@@ -17,7 +17,9 @@ El estado exacto para retomar otra sesión está en
 - Python requerido: 3.11 o superior; se recomienda 3.12 para el stack de ML;
 - runtime provisional: ONNX Runtime CPU con cuantización selectiva;
 - baseline sintético Android: 67.5 ms P50 y 78.1 ms P95 en TECNO KM5s;
-- smoke dataset: 64 avatares procedimentales auditables;
+- smoke dataset: 64 avatares procedimentales auditables, ya sólo como baseline;
+- corpus ampliado: generable desde la fuente aprobada `AF-PROC-001`, con
+  manifiesto v2 y lock criptográfico de release;
 - plumbing entrenable: loader por manifiesto y microentrenamiento local reanudable verificados;
 - modelo generativo entrenable: pendiente de ampliar y aprobar el dataset.
 
@@ -58,6 +60,8 @@ avatar-face status --json
 avatar-face audit-candidates --json
 avatar-face generate-smoke-dataset --samples 64 --seed 42
 avatar-face audit-dataset
+avatar-face generate-training-dataset --samples 512 --seed 42
+avatar-face freeze-dataset --manifest data/training-procedural-v2/manifest.json --version v2.0.0
 ```
 
 No se descargan modelos ni datasets durante la instalación base. Datos, pesos,

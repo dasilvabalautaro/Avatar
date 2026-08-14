@@ -45,22 +45,26 @@
       ]
     },
     {
-      "identifier": "warp-ai/wuerstchen-v2-pipeline",
-      "revision": null,
-      "estimated_download_gib": 11.4,
+      "identifier": "warp-ai/wuerstchen-prior-model-base",
+      "revision": "3f9205c8c2e7cf103192954fe6f096e66f9d4efc",
+      "estimated_download_gib": 3.97,
       "android_fit_as_is": false,
       "role": "teacher_candidate",
       "components": [
         {
-          "name": "Würstchen prior and decoder",
+          "name": "Würstchen v2 Stage C prior base weights",
           "license_id": "MIT",
-          "source_url": "https://huggingface.co/warp-ai/wuerstchen"
+          "source_url": "https://huggingface.co/warp-ai/wuerstchen-prior-model-base/tree/3f9205c8c2e7cf103192954fe6f096e66f9d4efc"
+        },
+        {
+          "name": "Frozen Würstchen decoder pipeline",
+          "license_id": "MIT",
+          "source_url": "https://huggingface.co/warp-ai/wuerstchen/tree/c3da41406ddd4d9c48c49aa93981a82354351b83"
         },
         {
           "name": "OpenCLIP ViT-bigG/14 text encoder",
           "license_id": "MIT",
-          "source_url": "https://github.com/mlfoundations/open_clip",
-          "notes": "Confirmar el checkpoint exacto antes de descargar."
+          "source_url": "https://huggingface.co/laion/CLIP-ViT-bigG-14-laion2B-39B-b160k/tree/743c27bd53dfe508a0ade0f50698f99b39d03bec"
         }
       ]
     },
@@ -69,13 +73,14 @@
       "revision": "b1a50e71a2b6a3d44dba6dbe541f01d09a10f5d8",
       "estimated_download_gib": 23.8,
       "android_fit_as_is": false,
-      "role": "teacher_candidate",
+      "role": "license_rejected",
       "components": [
         {
           "name": "FLUX.1-schnell bundled pipeline",
           "license_id": "Apache-2.0",
           "source_url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
-          "notes": "Repositorio gated; revisar condiciones de acceso antes de descargar."
+          "has_use_restrictions": true,
+          "notes": "La tarjeta de la revisión fija declara Apache-2.0, pero su sección Out-of-Scope Use prohíbe usos del modelo y derivados; incompatible con la política."
         }
       ]
     },

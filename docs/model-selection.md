@@ -2,10 +2,12 @@
 
 ## Decisión actual
 
-No descargar todavía ningún modelo completo. La primera arquitectura de
-producción será un estudiante especializado en avatares y diseñado para
-Android. Los modelos grandes sólo podrán actuar como maestros si superan la
-compuerta legal y el costo de la prueba está justificado.
+Se selecciona `warp-ai/wuerstchen-prior-model-base`, revisión
+`3f9205c8c2e7cf103192954fe6f096e66f9d4efc`, como base para el piloto LoRA.
+La revisión manual registró MIT para el prior, decoder congelado y OpenCLIP
+ViT-bigG/14, sin restricciones de uso declaradas en sus tarjetas. FLUX permanece
+rechazado por restricciones sobre derivados. No se descarga ni se entrena en
+este cambio.
 
 ## Shortlist
 

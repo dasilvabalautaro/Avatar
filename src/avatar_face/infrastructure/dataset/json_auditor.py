@@ -52,18 +52,24 @@ class JsonDatasetAuditor:
         if not manifest.is_file():
             return DatasetAuditResult(str(manifest), False, 0, 0, ("Manifiesto inexistente.",))
         payload: Any = json.loads(manifest.read_text(encoding="utf-8"))
-        if not isinstance(payload, dict) or payload.get("schema_version") != 1:
-            return DatasetAuditResult(str(manifest), False, 0, 0, ("schema_version debe ser 1.",))
+        if not isinstance(payload, dict) or payload.get("schema_version") not in {1, 2}:
+            return DatasetAuditResult(
+                str(manifest), False, 0, 0, ("schema_version debe ser 1 o 2.",)
+            )
         metadata = payload.get("dataset")
         if not isinstance(metadata, dict):
             findings.append("Faltan metadatos del dataset.")
         else:
             if metadata.get("contains_real_people") is not False:
-                findings.append("El smoke dataset no puede contener personas reales.")
+                findings.append("El dataset no puede contener personas reales.")
             if metadata.get("uses_external_assets") is not False:
-                findings.append("El smoke dataset no puede usar activos externos.")
+                findings.append("El dataset no puede usar activos externos.")
             if metadata.get("license_id") != "CC0-1.0":
-                findings.append("El smoke dataset debe declarar CC0-1.0.")
+                findings.append("El dataset debe declarar CC0-1.0.")
+            if payload.get("schema_version") == 2:
+                approved_sources = metadata.get("approved_source_ids")
+                if not isinstance(approved_sources, list) or approved_sources != ["AF-PROC-001"]:
+                    findings.append("Las fuentes aprobadas del manifiesto no son válidas.")
 
         raw_samples = payload.get("samples")
         if not isinstance(raw_samples, list):
@@ -102,6 +108,8 @@ class JsonDatasetAuditor:
             if sample.identifier in identifiers:
                 findings.append(f"ID duplicado: {sample.identifier}.")
             identifiers.add(sample.identifier)
+            if payload.get("schema_version") == 2 and sample.source != "AF-PROC-001":
+                findings.append(f"Fuente no aprobada: {sample.source}.")
             image_path = manifest.parent / sample.image
             if not image_path.is_file():
                 findings.append(f"Archivo inexistente: {sample.image}.")

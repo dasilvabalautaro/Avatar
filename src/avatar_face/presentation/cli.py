@@ -104,12 +104,34 @@ def _parser() -> argparse.ArgumentParser:
     dataset.add_argument("--seed", type=int, default=42)
     dataset.add_argument("--overwrite", action="store_true")
 
+    training_dataset = commands.add_parser(
+        "generate-training-dataset",
+        help="Genera el corpus ampliado desde fuentes de avatar aprobadas.",
+    )
+    training_dataset.add_argument("--output-dir", default="data/training-procedural-v2")
+    training_dataset.add_argument("--samples", type=int, default=512)
+    training_dataset.add_argument("--seed", type=int, default=42)
+    training_dataset.add_argument("--overwrite", action="store_true")
+
     dataset_audit = commands.add_parser(
         "audit-dataset", help="Verifica licencias, hashes y duplicados del dataset."
     )
     dataset_audit.add_argument(
         "--manifest", type=Path, default=Path("data/smoke-procedural/manifest.json")
     )
+
+    freeze = commands.add_parser(
+        "freeze-dataset", help="Crea un lock inmutable tras una auditoría aprobada."
+    )
+    freeze.add_argument("--manifest", type=Path, required=True)
+    freeze.add_argument("--version", required=True)
+    freeze.add_argument("--output", type=Path, default=None)
+
+    verify_frozen = commands.add_parser(
+        "verify-frozen-dataset", help="Verifica que una release sigue igual a su lock."
+    )
+    verify_frozen.add_argument("--manifest", type=Path, required=True)
+    verify_frozen.add_argument("--lock", type=Path, required=True)
 
     training = commands.add_parser(
         "train-smoke", help="Ejecuta un microentrenamiento local y reanudable sobre el manifiesto."
@@ -299,10 +321,41 @@ def _generate_smoke_dataset(output_directory: str, samples: int, seed: int, over
     return 0
 
 
+def _generate_training_dataset(
+    output_directory: str, samples: int, seed: int, overwrite: bool
+) -> int:
+    from avatar_face.infrastructure.dataset.procedural_generator import (
+        ProceduralAvatarDatasetGenerator,
+    )
+
+    result = ProceduralAvatarDatasetGenerator().generate_training(
+        output_directory, samples, seed, overwrite
+    )
+    print(json.dumps(asdict(result), indent=2, ensure_ascii=False))
+    return 0
+
+
 def _audit_dataset(manifest_path: Path) -> int:
     from avatar_face.infrastructure.dataset.json_auditor import JsonDatasetAuditor
 
     result = AuditDataset(JsonDatasetAuditor()).execute(manifest_path)
+    print(json.dumps(asdict(result), indent=2, ensure_ascii=False))
+    return 0 if result.approved else 3
+
+
+def _freeze_dataset(manifest_path: Path, version: str, output: Path | None) -> int:
+    from avatar_face.infrastructure.dataset.release_freezer import freeze_dataset
+
+    destination = output or manifest_path.parent / f"dataset-{version}.lock.json"
+    result = freeze_dataset(manifest_path, destination, version)
+    print(json.dumps(asdict(result), indent=2, ensure_ascii=False))
+    return 0
+
+
+def _verify_frozen_dataset(manifest_path: Path, lock_path: Path) -> int:
+    from avatar_face.infrastructure.dataset.release_freezer import verify_frozen_dataset
+
+    result = verify_frozen_dataset(manifest_path, lock_path)
     print(json.dumps(asdict(result), indent=2, ensure_ascii=False))
     return 0 if result.approved else 3
 
@@ -392,8 +445,16 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return _generate_smoke_dataset(
             parsed.output_dir, parsed.samples, parsed.seed, parsed.overwrite
         )
+    if parsed.command == "generate-training-dataset":
+        return _generate_training_dataset(
+            parsed.output_dir, parsed.samples, parsed.seed, parsed.overwrite
+        )
     if parsed.command == "audit-dataset":
         return _audit_dataset(parsed.manifest)
+    if parsed.command == "freeze-dataset":
+        return _freeze_dataset(parsed.manifest, parsed.version, parsed.output)
+    if parsed.command == "verify-frozen-dataset":
+        return _verify_frozen_dataset(parsed.manifest, parsed.lock)
     if parsed.command == "train-smoke":
         return _train_smoke(
             parsed.manifest,

@@ -72,8 +72,8 @@ class ManifestTorchDataset:
         if not self.manifest_path.is_file():
             raise FileNotFoundError(f"Manifiesto inexistente: {self.manifest_path}")
         payload: Any = json.loads(self.manifest_path.read_text(encoding="utf-8"))
-        if not isinstance(payload, dict) or payload.get("schema_version") != 1:
-            raise ValueError("schema_version debe ser 1.")
+        if not isinstance(payload, dict) or payload.get("schema_version") not in {1, 2}:
+            raise ValueError("schema_version debe ser 1 o 2.")
         raw_samples = payload.get("samples")
         if not isinstance(raw_samples, list):
             raise ValueError("samples debe ser una lista.")

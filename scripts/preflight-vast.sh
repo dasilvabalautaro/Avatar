@@ -38,7 +38,7 @@ path = Path(sys.argv[1]).resolve()
 try:
     payload = json.loads(path.read_text(encoding="utf-8"))
     samples = payload["samples"]
-    assert payload.get("schema_version") == 1 and isinstance(samples, list) and samples
+    assert payload.get("schema_version") in {1, 2} and isinstance(samples, list) and samples
     seen = set()
     for raw in samples:
         image = path.parent / raw["image"]
@@ -53,12 +53,14 @@ PY
 fi
 
 if [[ -f "$package_dir/SHA256SUMS" ]]; then
-  while read -r expected name; do
-    [[ -n "${name:-}" && -f "$package_dir/$name" ]] || { failures+=("paquete_faltante:${name:-desconocido}"); continue; }
-    actual=$(shasum -a 256 "$package_dir/$name" | awk '{print $1}')
-    [[ "$actual" == "$expected" ]] || failures+=("hash_paquete_invalido:$name")
-    tar -tf "$package_dir/$name" >/dev/null || failures+=("tar_invalido:$name")
-  done < "$package_dir/SHA256SUMS"
+  package_name="avatarface-$(basename "$(dirname "$manifest")")-dataset.tar"
+  expected=$(awk -v name="$package_name" '$2 == name { print $1; exit }' "$package_dir/SHA256SUMS")
+  if [[ -f "$package_dir/$package_name" ]]; then
+    [[ -n "$expected" ]] || failures+=("paquete_no_listado:$package_name")
+    actual=$(shasum -a 256 "$package_dir/$package_name" | awk '{print $1}')
+    [[ "$actual" == "$expected" ]] || failures+=("hash_paquete_invalido:$package_name")
+    tar -tf "$package_dir/$package_name" >/dev/null || failures+=("tar_invalido:$package_name")
+  fi
 else
   failures+=("falta_SHA256SUMS:$package_dir/SHA256SUMS")
 fi

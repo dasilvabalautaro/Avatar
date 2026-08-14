@@ -10,6 +10,7 @@ from avatar_face.infrastructure.dataset.json_auditor import JsonDatasetAuditor
 from avatar_face.infrastructure.dataset.procedural_generator import (
     ProceduralAvatarDatasetGenerator,
 )
+from avatar_face.infrastructure.dataset.release_freezer import freeze_dataset, verify_frozen_dataset
 
 
 def test_dataset_sample_rejects_non_synthetic_record() -> None:
@@ -89,3 +90,33 @@ def test_procedural_dataset_balances_primary_strata(tmp_path: Path) -> None:
             value = sample["attributes"][attribute]
             counts[value] = counts.get(value, 0) + 1
         assert max(counts.values()) - min(counts.values()) <= 1
+
+
+def test_expanded_dataset_is_auditable_and_can_be_frozen(tmp_path: Path) -> None:
+    result = ProceduralAvatarDatasetGenerator().generate_training(
+        str(tmp_path / "dataset"), 100, 42
+    )
+    manifest = Path(result.manifest_path)
+
+    audit = JsonDatasetAuditor().audit(manifest)
+    release = freeze_dataset(manifest, tmp_path / "dataset" / "dataset-v2.lock.json", "v2.0.0")
+
+    assert audit.approved
+    assert result.train_samples == 80
+    assert result.validation_samples == 10
+    assert result.test_samples == 10
+    assert release.manifest_sha256 == result.manifest_sha256
+    assert Path(release.lock_path).is_file()
+    assert verify_frozen_dataset(manifest, Path(release.lock_path)).approved
+
+
+def test_freeze_rejects_unapproved_dataset(tmp_path: Path) -> None:
+    result = ProceduralAvatarDatasetGenerator().generate_training(
+        str(tmp_path / "dataset"), 100, 42
+    )
+    manifest = Path(result.manifest_path)
+    image = manifest.parent / "images/avatar-00000.png"
+    image.write_bytes(image.read_bytes() + b"tampered")
+
+    with pytest.raises(ValueError, match="auditoría debe aprobarse"):
+        freeze_dataset(manifest, tmp_path / "dataset" / "dataset-v2.lock.json", "v2.0.0")
