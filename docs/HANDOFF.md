@@ -51,9 +51,9 @@ Completado:
 
 En curso:
 
-- Fase 2 — decidir escala-2 (500–1000 pasos, `lr=5e-5`, 408 muestras de
-  train) con la misma evaluación visual; la instancia quedó encendida con el
-  entorno completo verificado.
+- Fase 2 — escala-2 autorizada por la compuerta de escala-1: 500–1000 pasos,
+  `lr=5e-5`, 408 muestras de train. La instancia de escala-1 se apagó; la
+  re-entrada a una GPU nueva está automatizada (ver abajo).
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -61,12 +61,31 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar escala-2 si el usuario la autoriza: 500–1000 pasos con `lr=5e-5`
-> sobre las 408 muestras de train de la release v2.0.0, mismo LoRA y seed 42,
-> con la misma evaluación visual de 8 prompts + 8 `base-only` de
-> `docs/lora-scale-1-design.md`. El objetivo es medir si la fidelidad de
-> atributos débiles (color de ojos, accesorios) mejora con más pasos. Respaldo
-> local con SHA-256 y GPU al 0 % al cerrar.
+> Ejecutar escala-2 en una GPU nueva. Re-entrada automatizada:
+> 1. Contratar RTX 4090 (≥ 50 GiB libres) y anotar IP/puerto SSH (fuera de Git).
+> 2. Subir los paquetes pequeños por ruta directa:
+>    `scp -P PUERTO transfer/avatarface-training-procedural-v2-dataset.tar
+>    transfer/avatarface-smoke-dataset.tar transfer/SHA256SUMS
+>    root@IP:/tmp/avatarface-transfer/` (crear el directorio antes).
+> 3. En la instancia: `git clone --depth 1 https://github.com/dasilvabalautaro/Avatar.git
+>    /workspace/AvatarFace && bash /workspace/AvatarFace/scripts/bootstrap-vast.sh`
+>    — instala deps fijadas, restaura datasets verificando SHA-256, descarga
+>    los pesos (~1 h) con verificación completa y corre `preflight-vast`.
+>    Debe terminar con `BOOTSTRAP_OK` y `ready:true`.
+> 4. Entrenar: `python scripts/run_wuerstchen_lora_pilot.py --root
+>    /workspace/AvatarFace --steps 500 --learning-rate 5e-5 --output
+>    /workspace/AvatarFace/artifacts/lora-scale-2` (si 500 pasos resultan
+>    visualmente idénticos a escala-1, escalar a 1000 en la misma sesión).
+> 5. Evaluar: `bash scripts/eval-visual-lora.sh
+>    artifacts/lora-scale-2/pilot-checkpoint.pt artifacts/lora-scale-2/eval`
+>    (conjunto congelado de 8 prompts + 8 base-only).
+> 6. Inspección visual con la lista del diseño (incluye edad aparente adulta,
+>    RF-09), respaldo local con SHA-256 en `artifacts/lora-scale-2/`, doc de
+>    resultados en `docs/experiments/`, GPU al 0 % y avisar al usuario para
+>    apagar la instancia.
+>
+> Si la instancia de escala-1 sólo quedó detenida (no destruida), reanudarla
+> omite los pasos 2–3 por completo.
 
 ## 2. Repositorio y entorno
 
@@ -350,9 +369,9 @@ lock SHA-256.
   y nunca deben usarse para entrenamiento.
 - **Pesos en Vast:** la vía de descarga directa verificada quedó probada en la
   sesión de escala-1 (33/33 archivos, SHA-256 completo). Si la instancia se
-  destruye, basta repetir: clone + deps + dataset (2.5 MB) +
-  `scripts/download-wuerstchen-weights.py` (~1 h de descarga). El paquete
-  local `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB)
+  destruye, la re-entrada completa la hace `scripts/bootstrap-vast.sh` (ver
+  «Próxima tarea exacta»). El paquete local
+  `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB)
   puede borrarse: la vía directa ya es la probada.
 - **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
   256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad
