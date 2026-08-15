@@ -17,14 +17,27 @@ Se eliminaron las copias `.bin` duplicadas; la release conserva exclusivamente
 ## Integridad y transferencia
 
 - Manifiesto local: `models/wuerstchen-v2/model-manifest.json`.
-- SHA-256 del manifiesto:
-  `e8e7ce4f5969f557fb1d078cbaa55c85a1ac943ceb079c0ca2198fc1ed770b38`.
-- Contenido declarado: 3 componentes, 33 archivos y 30,005,997,031 bytes.
-- Paquete: `transfer/avatarface-wuerstchen-v2.tar`.
-- SHA-256 del paquete:
-  `691b3775232c511ec6fbb1cdbed1060dc4ff1fa50b70816c7f80f2250739dead`.
+- SHA-256 del manifiesto (release con Stage B):
+  `0b1c6b0ee3efdf4d1e5985e6728b962f9c996b7cd9f4bf71190c561959fe660a`.
+- Contenido declarado: 4 componentes, 34 archivos y 34,309,480,546 bytes.
+- Paquete Stage B: `transfer/avatarface-wuerstchen-v2-stageb.tar`.
+- SHA-256 del paquete Stage B:
+  `9568427b33d1dbc7eed68f331ab2b76173dc0e6bda79a12d3d1ce569ab8482be`.
 
 El paquete excede 100 MB, por lo que sigue la ruta obligatoria **local → Google
 Drive → Vast.ai**. Antes de extraer en Vast se valida `SHA256SUMS`; tras extraer
 se vuelve a calcular cada hash según `model-manifest.json`. Los pesos, paquetes
 de transferencia y manifiestos generados están ignorados por Git.
+
+## Restauración remota auditada
+
+El 2026-08-15 se restauró la copia Stage B descargada desde Drive en una RTX
+4090 de 48 GB nominales. El SHA-256 del tar coincidió antes de extraer y la
+auditoría remota confirmó los 34 archivos, 4 componentes y 34,309,480,546 bytes
+con el SHA-256 `0b1c6b0ee3efdf4d1e5985e6728b962f9c996b7cd9f4bf71190c561959fe660a`.
+El tar temporal se eliminó tras la extracción.
+
+La prueba CUDA real pasó con PyTorch `2.12.0+cu130`: RTX 4090 con 47.37 GiB
+visibles por PyTorch (la representación binaria habitual de una GPU comercial
+de 48 GB). La instancia no posee volumen persistente; la copia local y Drive
+siguen siendo los respaldos de autoridad.

@@ -45,9 +45,9 @@ directa máquina local → Vast.ai; no se sube a Drive. Conservar el `.tar` y
    local, o descárguelos desde Drive con reanudación a un directorio temporal
    (por ejemplo `/tmp/avatarface-transfer`). No añada URLs de Drive a Git ni al
    historial del shell.
-3. Desde un checkout del repositorio, ejecute. El restaurador borra el `.tar`
-   remoto después de comprobar su SHA-256; el preflight posterior verifica el
-   manifiesto restaurado y CUDA.
+3. Desde un checkout del repositorio, ejecute. El restaurador acepta exactamente
+   un objetivo bajo `data/` o `models/`, borra el `.tar` remoto después de
+   comprobar su SHA-256 y deja el manifiesto para la auditoría posterior.
 
 ```bash
 scripts/restore-from-drive.sh /tmp/avatarface-transfer/avatarface-training-procedural-v2-dataset.tar \
@@ -57,5 +57,16 @@ scripts/restore-from-drive.sh /tmp/avatarface-transfer/avatarface-training-proce
 
 La restauración verifica el listado y SHA-256, rechaza rutas inseguras del tar,
 extrae únicamente bajo el destino y borra el tar temporal sólo después de
-verificarlo. `preflight-vast` ejecuta una operación CUDA real, pero no entrena.
+verificarlo. Para pesos, ejecute además
+`python scripts/verify-model-manifest.py models/wuerstchen-v2/model-manifest.json`.
+`preflight-vast` ejecuta una operación CUDA real, pero no entrena.
+
+## Paquete fresco tras cuota de Drive (2026-08-15)
+
+Si Drive mantiene la cuota al usar **Hacer una copia**, use el paquete generado
+localmente `avatarface-wuerstchen-v2-stageb-fresh-20260815.tar` y su archivo
+`SHA256SUMS-stageb-fresh-20260815`. Deben subirse como archivos nuevos; no deben
+reemplazar ni renombrar los paquetes anteriores. El tar mide 34,309,578,752
+bytes y su SHA-256 es
+`c25196411187496755f8c1001a5ce90aa344aa32adabcf26c988d2a8d0a7a92a`.
 No ejecute `train-smoke` ni una corrida pagada hasta que el reporte sea `ready`.

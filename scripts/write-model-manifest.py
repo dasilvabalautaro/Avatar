@@ -32,6 +32,13 @@ COMPONENTS = (
         "revision": "743c27bd53dfe508a0ade0f50698f99b39d03bec",
         "license_id": "MIT",
     },
+    {
+        "id": "stage-b-encoder",
+        "path": "stage-b-encoder",
+        "repository": "dome272/wuerstchen",
+        "revision": "6eb6cf5494fa67472afdbcfd78a31dcb091b0c05",
+        "license_id": "MIT",
+    },
 )
 
 
