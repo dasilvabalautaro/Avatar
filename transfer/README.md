@@ -18,6 +18,18 @@ hash antes de extraer. Para pesos, se incluye `model-manifest.json` con la
 revisión, licencia, tamaño y SHA-256 de cada archivo. El empaquetador informa la ruta autorizada; no sube ni
 transfiere automáticamente.
 
+## Excepción: pesos públicos fijados por hash (2026-08-15)
+
+Los pesos de `models/wuerstchen-v2/` son públicos en HuggingFace y su
+compuerta real es el SHA-256 fijado en `model-manifest.json`, no el
+transporte. Cuando el ancho de banda local haga inviable la subida a Drive,
+pueden descargarse **directamente en la instancia** desde sus repositorios
+oficiales con `scripts/download-wuerstchen-weights.py`, que descarga sólo los
+archivos listados en el manifiesto (revisión fijada por commit) y verifica el
+SHA-256 de todos ellos antes de cualquier entrenamiento. Esta excepción no
+aplica a datasets propios, que no existen en ningún servidor público y siguen
+el flujo de la regla de transporte.
+
 ## Antes de crear una instancia
 
 Desde la raíz del repositorio, auditar los datos y preparar un paquete:

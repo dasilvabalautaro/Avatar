@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "id": "prior-base",
+      "path": "prior-base",
+      "repository": "warp-ai/wuerstchen-prior-model-base",
+      "revision": "3f9205c8c2e7cf103192954fe6f096e66f9d4efc",
+      "license_id": "MIT",
+      "files": [
+        {
+          "path": "prior-base/.gitattributes",
+          "bytes": 1519,
+          "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+        },
+        {
+          "path": "prior-base/README.md",
+          "bytes": 6442,
+          "sha256": "866dc3ffe1d307d65c5cff55083fb30d9dcd70ba2a9244bbee70d636c26cd294"
+        },
+        {
+          "path": "prior-base/config.json",
+          "bytes": 184,
+          "sha256": "2cd74a7e84f493733963e0f1757d0a205276a49293aa3dcfe2f37a6b61603e66"
+        },
+        {
+          "path": "prior-base/diffusion_pytorch_model.safetensors",
+          "bytes": 3974614642,
+          "sha256": "a039cc330ebb22c61eed6c979175beecf5e09104cfa8010a5e38cdf22e306f0b"
+        }
+      ]
+    },
+    {
+      "id": "decoder",
+      "path": "decoder",
+      "repository": "warp-ai/wuerstchen",
+      "revision": "c3da41406ddd4d9c48c49aa93981a82354351b83",
+      "license_id": "MIT",
+      "files": [
+        {
+          "path": "decoder/.gitattributes",
+          "bytes": 1519,
+          "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+        },
+        {
+          "path": "decoder/README.md",
+          "bytes": 5376,
+          "sha256": "8bfe94000eab2271659b8dbfa6b85d3d1014a44b4ed401849cb3f9819a9f0459"
+        },
+        {
+          "path": "decoder/decoder/config.json",
+          "bytes": 525,
+          "sha256": "130cf5a3fc1a35a4fab673c0c5c8639f74d5ae75a13f70d4978cf128a4326c5b"
+        },
+        {
+          "path": "decoder/decoder/diffusion_pytorch_model.safetensors",
+          "bytes": 4221568336,
+          "sha256": "1510c2cc1a891df02d61d79866c40c506e9099519829e0282c2a79d7e9c7e66f"
+        },
+        {
+          "path": "decoder/model_index.json",
+          "bytes": 436,
+          "sha256": "58948603b1b06799c9c696b9408625402f5582294e076deb97fca50128db45b0"
+        },
+        {
+          "path": "decoder/scheduler/scheduler_config.json",
+          "bytes": 117,
+          "sha256": "2fe6ab0496e02d4aaabc1bc2893cac34d5ebbd833841abf88386684f3c1c315c"
+        },
+        {
+          "path": "decoder/text_encoder/config.json",
+          "bytes": 621,
+          "sha256": "3f4a41e45cd931142d7caa5426787715e7eb76785655e778ccfd5aa1e779efa1"
+        },
+        {
+          "path": "decoder/text_encoder/model.safetensors",
+          "bytes": 1411983168,
+          "sha256": "bd94a7ea6922e8028227567fe14e04d2989eec31c482e0813e9006afea6637f1"
+        },
+        {
+          "path": "decoder/tokenizer/merges.txt",
+          "bytes": 524619,
+          "sha256": "9fd691f7c8039210e0fced15865466c65820d09b63988b0174bfe25de299051a"
+        },
+        {
+          "path": "decoder/tokenizer/special_tokens_map.json",
+          "bytes": 472,
+          "sha256": "c4864a9376a8401918425bed71fc14fc0e81f9b59ec45c1cf96cccb2df508eac"
+        },
+        {
+          "path": "decoder/tokenizer/tokenizer.json",
+          "bytes": 2224119,
+          "sha256": "f7f3b7af117d467b58374797691a6438d3e6b9e9cef800dfd5dced7f697a90cd"
+        },
+        {
+          "path": "decoder/tokenizer/tokenizer_config.json",
+          "bytes": 737,
+          "sha256": "19d7b034cb0cc3ce9766c2231373ab8aa8991fc72e2c8f76558bfaae3de0d563"
+        },
+        {
+          "path": "decoder/tokenizer/vocab.json",
+          "bytes": 862328,
+          "sha256": "5047b556ce86ccaf6aa22b3ffccfc52d391ea4accdab9c2f2407da5b742d4363"
+        },
+        {
+          "path": "decoder/vqgan/config.json",
+          "bytes": 287,
+          "sha256": "86b2b4847a21cb8fa94e5f3fe7d35b543cdf24b9469b370902615a07bf8165db"
+        },
+        {
+          "path": "decoder/vqgan/diffusion_pytorch_model.safetensors",
+          "bytes": 73639568,
+          "sha256": "052db8852c0d8b117e6d2a59ae3e0c7d7aaae3d00f247e392ef8e9837e11d6c4"
+        }
+      ]
+    },
+    {
+      "id": "text-encoder",
+      "path": "text-encoder",
+      "repository": "laion/CLIP-ViT-bigG-14-laion2B-39B-b160k",
+      "revision": "743c27bd53dfe508a0ade0f50698f99b39d03bec",
+      "license_id": "MIT",
+      "files": [
+        {
+          "path": "text-encoder/.gitattributes",
+          "bytes": 1679,
+          "sha256": "6cf143c2c1f61e4e8b8ecd0b300f8ad7a8888a31bd32eef865f8397e2de6f8b5"
+        },
+        {
+          "path": "text-encoder/README.md",
+          "bytes": 8658,
+          "sha256": "def887b9bed5aea6d97ef898ade975fa60ad3b44a1cd7a83ec07291ef4963af4"
+        },
+        {
+          "path": "text-encoder/config.json",
+          "bytes": 4877,
+          "sha256": "19e294229f72b1db7b9442869b814f71eeb05eae3eb2729fa41da7f444039dfb"
+        },
+        {
+          "path": "text-encoder/merges.txt",
+          "bytes": 524619,
+          "sha256": "9fd691f7c8039210e0fced15865466c65820d09b63988b0174bfe25de299051a"
+        },
+        {
+          "path": "text-encoder/open_clip_config.json",
+          "bytes": 671,
+          "sha256": "5bd7ad69ec151ba9e4a5e92a622655cb88cd6c76764df97a1ea0279062755e7b"
+        },
+        {
+          "path": "text-encoder/preprocessor_config.json",
+          "bytes": 316,
+          "sha256": "910e70b3956ac9879ebc90b22fb3bc8a75b6a0677814500101a4c072bd7857bd"
+        },
+        {
+          "path": "text-encoder/pytorch_model-00001-of-00002.safetensors",
+          "bytes": 9989894780,
+          "sha256": "5b49b8f729a0fda62f11ddf8bf351c3e5ee6cc3a400a9459b44537b3ee10d41a"
+        },
+        {
+          "path": "text-encoder/pytorch_model-00002-of-00002.safetensors",
+          "bytes": 168535880,
+          "sha256": "36dc9b676755ac8048a09ec994a47ad359361eab01dfa6dc2cdf5decaae28e17"
+        },
+        {
+          "path": "text-encoder/pytorch_model.bin.index.json",
+          "bytes": 119982,
+          "sha256": "6ca527d72dc2b160beb7542bcbe14a9fc71084caf1ce90bf6eca559736a8cf5b"
+        },
+        {
+          "path": "text-encoder/special_tokens_map.json",
+          "bytes": 389,
+          "sha256": "f8c0d6c39aee3f8431078ef6646567b0aba7f2246e9c54b8b99d55c22b707cbf"
+        },
+        {
+          "path": "text-encoder/tokenizer.json",
+          "bytes": 2224041,
+          "sha256": "b556ac8c99757ffb677208af34bc8c6721572114111a6e0aaf5fa69ff0b8d842"
+        },
+        {
+          "path": "text-encoder/tokenizer_config.json",
+          "bytes": 904,
+          "sha256": "e19f34ef773563fb695f96cfcae1e4c7b112ab6ad532f6962061df5242d924f0"
+        },
+        {
+          "path": "text-encoder/vocab.json",
+          "bytes": 862328,
+          "sha256": "5047b556ce86ccaf6aa22b3ffccfc52d391ea4accdab9c2f2407da5b742d4363"
+        }
+      ]
+    },
+    {
+      "id": "stage-b-encoder",
+      "path": "stage-b-encoder",
+      "repository": "dome272/wuerstchen",
+      "revision": "6eb6cf5494fa67472afdbcfd78a31dcb091b0c05",
+      "license_id": "MIT",
+      "files": [
+        {
+          "path": "stage-b-encoder/model_v2_stage_b.pt",
+          "bytes": 4303483515,
+          "sha256": "aba31f166a8dfb672fc81b63336b12e4667a10ddfb783a822b8fe20b356a899c"
+        }
+      ]
+    }
+  ]
+}

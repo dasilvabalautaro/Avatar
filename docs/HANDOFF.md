@@ -56,11 +56,15 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar el experimento LoRA escala-1 según `docs/lora-scale-1-design.md`:
-> 200 pasos con `lr=5e-5`, evaluación visual de 8 prompts fijos (más sus
-> contrapartes `base-only`), respaldo local con SHA-256 y GPU detenida al
-> cerrar. Fallback documentado: una repetición con `lr=1e-5` si la muestra es
-> inválida.
+> Ejecutar el experimento LoRA escala-1 según `docs/lora-scale-1-design.md`.
+> La instancia anterior se descartó antes de entrenar; al contratar la próxima
+> GPU: clonar el repo, instalar las dependencias del piloto, subir el dataset
+> (2.5 MB, ruta directa), copiar `transfer/model-manifest-trimmed-20260815.json`
+> como `models/wuerstchen-v2/model-manifest.json`, descargar los pesos con
+> `scripts/download-wuerstchen-weights.py` (descarga directa verificada, ver
+> sección 11), `preflight-vast`, entrenar 200 pasos con `lr=5e-5` y evaluar
+> los 8 prompts fijos más sus contrapartes `base-only`. Respaldo local con
+> SHA-256 y GPU detenida al cerrar. Estimación total: ~2 horas de GPU.
 
 ## 2. Repositorio y entorno
 
@@ -342,9 +346,14 @@ lock SHA-256.
   propietaria. El token sólo existe en la instancia; no copiarlo a Git.
   Los 18.70 GB parciales de la descarga antigua por rangos están descartados
   y nunca deben usarse para entrenamiento.
-- **Pesos en Vast:** ya restaurados y verificados; si la instancia se
-  destruye, repetir la descarga autenticada (el `.tar` remoto se eliminó
-  tras verificar, como manda la política).
+- **Pesos en Vast:** la instancia usada hasta el piloto v3 se descartó y el
+  token rclone/OAuth murió con ella. La restauración de pesos usa ahora la
+  descarga directa verificada (sección 11); el paquete local
+  `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB, SHA-256
+  `25704fcb...`) queda sólo como contingencia y puede borrarse cuando la vía
+  directa quede probada. El manifiesto recortado (sin el duplicado
+  `open_clip_model.safetensors`, 10.2 GB) está en
+  `transfer/model-manifest-trimmed-20260815.json`.
 - **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
   256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad
   de las muestras de `lora-pilot-v2` ni de `lora-pilot-v2-lr1e5`.
@@ -370,7 +379,12 @@ lock SHA-256.
 - No conservar descargas reconstruibles.
 - Flujo de transferencia obligatorio: máquina local → `.tar` + SHA256SUMS →
   Drive → descarga en Vast; nunca descargar directamente desde Vast.ai y
-  verificar SHA-256 antes y después de cada transferencia.
+  verificar SHA-256 antes y después de cada transferencia. **Excepción
+  (2026-08-15):** los pesos públicos de HuggingFace fijados por hash en
+  `model-manifest.json` pueden descargarse directamente en la instancia con
+  `scripts/download-wuerstchen-weights.py` + verificación completa de
+  `scripts/verify-model-manifest.py` (ver `transfer/README.md`). Los datasets
+  propios siguen el flujo estándar.
 
 ## 12. Primeros comandos de la próxima sesión
 

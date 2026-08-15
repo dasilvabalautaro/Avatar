@@ -184,6 +184,11 @@ Comandos CLI disponibles (todos emiten resultados explícitos, la mayoría JSON)
   >100 MB) → restauración verificada por hash; los scripts en `scripts/`
   (`package-for-drive.sh`, `restore-from-drive.sh`, `preflight-vast.sh`)
   rechazan rutas inseguras y no suben ni transfieren automáticamente.
+  Excepción (2026-08-15): los pesos públicos de HuggingFace fijados por
+  SHA-256 en `model-manifest.json` pueden descargarse directamente en la
+  instancia con `scripts/download-wuerstchen-weights.py` y verificación
+  completa; los datasets propios siguen el flujo estándar
+  (`transfer/README.md`).
 - El agente gestiona Git (commits y push) vía SSH
   (`git@github.com:dasilvabalautaro/Avatar.git`); nunca commitear
   `keys-git.md` ni ninguna credencial.
