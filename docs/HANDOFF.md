@@ -1,6 +1,6 @@
 # Handoff de AvatarFace
 
-Actualizado: 2026-08-13, zona horaria `America/La_Paz`.
+Actualizado: 2026-08-15, zona horaria `America/La_Paz`.
 
 Este documento es el punto de entrada obligatorio para retomar el proyecto en
 otra sesión. El estado descrito corresponde al commit que contiene este archivo;
@@ -21,22 +21,35 @@ Completado:
 - perfilado por componentes y por operador;
 - pipeline móvil selectivo persistente validado en dispositivo;
 - smoke dataset procedimental, auditoría, loader reproducible y
-  microentrenamiento local reanudable.
+  microentrenamiento local reanudable;
+- release de entrenamiento `training-procedural-v2` v2.0.0 congelada y
+  smoke remoto en Vast completado;
+- Würstchen v2 Stage C aprobado, descargado y fijado por SHA-256;
+- piloto LoRA de 20 pasos ejecutado en RTX 4090 (integración correcta; la
+  validación de calidad era inválida por configuración y fue descartada);
+- validador `scripts/validate_wuerstchen_lora.py` corregido a la receta
+  oficial (30 timesteps, fp16, 1024, guía 8.0, prompt negativo).
 
 En curso:
 
-- Fase 2 — dataset legal, especializado y auditable; release procedimental v2
-  congelada y smoke remoto completado.
+- Fase 2 — piloto LoRA sobre la release v2; bloqueado por la transferencia
+  de los pesos Stage B.
+- Subida a Drive de `transfer/avatarface-wuerstchen-v2-stageb-fresh-20260815.tar`
+  (34,309,578,752 bytes, SHA-256
+  `c25196411187496755f8c1001a5ce90aa344aa32adabcf26c988d2a8d0a7a92a`),
+  iniciada el 2026-08-15.
+
+Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
+adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
+`docs/product-requirements.md`, riesgo R-16 y la sección 11.
 
 Próxima tarea exacta:
 
-> Auditar los candidatos y seleccionar un modelo base permisivo; después,
-> redactar el plan de LoRA/fine-tuning en GPU sobre la release v2 congelada.
-
-Actualización: Würstchen v2 Stage C base fue aprobado, descargado localmente y
-empaquetado con hashes. El próximo paso es subir el paquete a Drive y, en una
-nueva instancia Vast, restaurar/verificar pesos antes de un piloto LoRA de 20
-pasos.
+> Verificar que la subida a Drive terminó (ID nuevo, tamaño y SHA-256 por
+> rangos de muestra), restaurar los pesos en la instancia Vast con
+> verificación completa de hash y ejecutar la validación `base-only` con el
+> validador corregido. Esa imagen base válida es la compuerta obligatoria
+> antes de repetir el piloto LoRA.
 
 ## 2. Repositorio y entorno
 
@@ -63,12 +76,15 @@ deben conservarse.
 
 En el momento de este handoff:
 
-- pytest: 38 pruebas superadas;
+- pytest: 40 pruebas superadas;
 - Ruff: sin hallazgos;
-- mypy estricto: sin errores en 33 archivos fuente;
+- mypy estricto: sin errores en 38 archivos fuente;
 - Gradle `:app:assembleDebug`: exitoso;
 - smoke dataset: 64 muestras, 64 hashes únicos, cero hallazgos;
-- no quedó ningún proceso `com.avatarface.app` activo en el teléfono.
+- release v2.0.0 de entrenamiento congelada, lock SHA-256
+  `79ecdd3f36301c4462372be35e93f66cee3e52f51d6992050728da8dc84334a2`;
+- no quedó ningún proceso `com.avatarface.app` activo en el teléfono;
+- la RTX 4090 de Vast quedó a 0 % de utilización y 1 MiB de memoria ocupada.
 
 Comandos de control:
 
@@ -272,53 +288,79 @@ Dependencias fijadas:
 
 ## 9. Próximas tareas, en orden estricto
 
-### P0. Loader reproducible
+Las antiguas tareas P0 (loader reproducible, microentrenamiento local
+reanudable, regresión congelada y licencias) están completadas.
 
-1. Crear entidad/configuración tipada para dataset y entrenamiento.
-2. Implementar loader desde `manifest.json`; nunca escanear imágenes sin
-   manifiesto.
-3. Verificar SHA-256 opcionalmente al abrir cada muestra y siempre en preflight.
-4. Aplicar splits declarados, seed fija y orden determinista.
-5. Normalizar PNG a tensores `[-1, 1]` sin augmentations en la primera prueba.
-6. Añadir pruebas de batch, shape, split, hash alterado y determinismo.
+### P0. Restauración de pesos en Vast (bloqueada por Drive)
 
-Criterio de salida alcanzado: un batch train reproducible de forma
-`[B, 3, 256, 256]`, normalizado a `[-1, 1]`, y ninguna muestra fuera del
-manifiesto.
+1. Confirmar que la subida del `.tar` fresh terminó y anotar el ID nuevo de
+   Drive.
+2. Verificar tamaño (34,309,578,752 bytes) y SHA-256
+   (`c25196411187496755f8c1001a5ce90aa344aa32adabcf26c988d2a8d0a7a92a`) con
+   descarga por rangos de muestra antes de tocar Vast.
+3. En la instancia Vast: descargar desde Drive, verificar SHA-256 completo,
+   restaurar bajo `models/wuerstchen-v2/` y confirmar el manifiesto con
+   `scripts/verify-model-manifest.py`.
+4. Eliminar el `.tar` remoto tras verificar; no conservar descargas
+   reconstruibles.
 
-### P0. Microentrenamiento local reanudable
+### P0. Compuerta base-only
 
-1. Implementar primero un autoencoder/decoder pequeño; no entrenar todavía el
-   text-to-image completo.
-2. Configurar una corrida de 5–20 steps sobre CPU/local para probar el plumbing.
-3. Guardar checkpoint con modelo, optimizer, step, seed, config y hash del
-   manifiesto.
-4. Reanudar y demostrar que continúa desde el step correcto.
-5. Guardar reconstrucciones de validation bajo `artifacts/`, nunca en Git.
-6. Registrar pérdida y tiempo; calidad visual no es aún compuerta.
+1. Ejecutar `scripts/validate_wuerstchen_lora.py` en modo `base-only` con la
+   receta oficial: 30 timesteps `DEFAULT_STAGE_C_TIMESTEPS`, fp16, 1024,
+   guidance 8.0, prompt negativo y semilla explícita.
+2. Inspección visual de la imagen base: debe ser un rostro válido, no ruido
+   ni mosaico. Registrar estadísticas y hash en `docs/experiments/`.
+3. Si falla, diagnosticar la ruta prior → decoder antes de cualquier LoRA.
 
-Criterio de salida alcanzado: checkpoint reanudable y ejecución determinista sin
-error. Comando: `avatar-face train-smoke --steps 5`, seguido de
-`avatar-face train-smoke --steps 7 --resume`.
+### P1. Repetición del piloto LoRA (sólo si la compuerta pasa)
 
-### P0. Mejorar dataset antes de entrenamiento serio
+1. Repetir el piloto de 20 pasos sobre la release v2 con
+   `scripts/run_wuerstchen_lora_pilot.py`.
+2. Validar con el validador corregido y hacer inspección visual.
+3. Respaldar checkpoints localmente con SHA-256 y detener la GPU al terminar.
+4. No pagar corridas largas hasta que una muestra del piloto sea visualmente
+   válida.
 
-1. Muestreo estratificado, geometría facial y similitud perceptual: completados.
-2. Regresión congelada y licencias de publicación formalizadas.
+### P2. Filtro de sólo adultos (requisito rector nuevo)
 
-### P1. Vast.ai, sólo después del smoke local
+1. Implementar el rechazo de prompts de menores en `validate-prompt` (RF-09).
+2. Garantizar que las plantillas de captions del generador procedimental sólo
+   describan adultos.
+3. Añadir fixtures de regresión con prompts de menores rechazados.
+4. Incluir la verificación de edad aparente en la evaluación visual futura.
 
-1. Inspeccionar y reutilizar patrones del proyecto
-   `/Users/davidsilva/Opencode/Anthropic/MythosLight`.
-2. Implementar `preflight-vast`; no iniciar entrenamiento costoso directamente.
-3. No descargar desde Vast.ai. Flujo obligatorio:
-   máquina local → archivo `.tar` → Google Drive → descarga desde Drive en Vast.
-4. Calcular SHA-256 antes y después de transferir.
-5. Eliminar descargas y `.tar` reconstruibles después de verificarlos y usarlos.
-6. No registrar credenciales, IDs privados ni comandos SSH con secretos.
+### P2. Brecha receta oficial vs. presupuesto móvil
 
-## 10. Riesgos y prohibiciones vigentes
+La receta base válida (1024 px, 30 pasos, guía 8.0) es mucho más costosa que
+el baseline Android (256 px, 67 ms P50, RNF-03 ≤5 s). Planear destilación o
+reducción de pasos y registrar la decisión en un ADR cuando el piloto dé
+evidencia. No actuar todavía.
 
+## 10. Puntos de vigilancia activos
+
+- **Subida Drive en curso** (iniciada 2026-08-15): confirmar que el `.tar`
+  fresh de 32 GB termina con ID nuevo. No reutilizar los IDs antiguos de
+  Drive (registrados fuera de Git) ni copias servidor-a-servidor: heredan la
+  misma cuota rechazada.
+- **Hash tras la subida:** verificar por rangos de muestra antes de restaurar
+  en Vast. Los 18.70 GB parciales de la descarga anterior por rangos están
+  descartados y nunca deben usarse para entrenamiento.
+- **Compuerta base-only:** ninguna corrida LoRA nueva hasta que la imagen
+  `base-only` del validador corregido pase inspección visual.
+- **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
+  256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad
+  de las muestras de `lora-pilot-v2` ni de `lora-pilot-v2-lr1e5`.
+- **Costo GPU:** detener la instancia Vast al terminar cada tarea y verificar
+  0 % de utilización al cerrar cada sesión remota.
+- **Filtro de menores:** vigilar que prompts, captions del dataset y
+  evaluación visual apliquen la restricción de sólo adultos de forma
+  consistente.
+
+## 11. Riesgos y prohibiciones vigentes
+
+- **Prohibido generar, entrenar o validar avatares de menores de edad**; el
+  producto es sólo para adultos (RF-09, riesgo R-16).
 - No usar modelos, encoders, datasets o pesos con restricciones de uso.
 - No asumir que la licencia del repositorio cubre todos los componentes.
 - No usar rostros reales en el smoke dataset.
@@ -329,12 +371,15 @@ error. Comando: `avatar-face train-smoke --steps 5`, seguido de
 - No desplegar `target` todavía.
 - No hacer push; el usuario lo realiza.
 - No conservar descargas reconstruibles.
+- Flujo de transferencia obligatorio: máquina local → `.tar` + SHA256SUMS →
+  Drive → descarga en Vast; nunca descargar directamente desde Vast.ai y
+  verificar SHA-256 antes y después de cada transferencia.
 
-## 11. Primeros comandos de la próxima sesión
+## 12. Primeros comandos de la próxima sesión
 
 ```bash
 cd /Users/davidsilva/VisualStudioCodeProjects/Avatar
-sed -n '1,260p' docs/HANDOFF.md
+sed -n '1,140p' docs/HANDOFF.md
 git status --short
 git log -1 --oneline
 .venv/bin/pytest
@@ -342,4 +387,5 @@ git log -1 --oneline
   --manifest data/smoke-procedural/manifest.json
 ```
 
-Después, comenzar directamente por `P0. Loader reproducible` de este documento.
+Después, comenzar directamente por `P0. Restauración de pesos en Vast` de la
+sección 9 (verificar primero la subida de Drive según la sección 10).

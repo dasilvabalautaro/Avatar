@@ -74,6 +74,8 @@ Taxonomía inicial de prompt:
 - RF-06: guardar o compartir la imagen mediante mecanismos Android.
 - RF-07: registrar métricas de benchmark en builds de prueba.
 - RF-08: rechazar entradas vacías o fuera del contrato.
+- RF-09: rechazar todo prompt que solicite o sugiera un avatar de una persona
+  menor de edad; el producto sólo genera rostros de adultos.
 
 ## Requisitos no funcionales
 
@@ -90,6 +92,10 @@ Taxonomía inicial de prompt:
 ## Seguridad y uso responsable
 
 - El MVP no ofrecerá clonación de identidad.
+- **Sólo se generan rostros de adultos.** Es una restricción rectora del
+  producto: el filtro de prompts debe rechazar solicitudes de menores, las
+  plantillas de captions del dataset no deben describir menores y la
+  evaluación visual debe verificar que la salida no represente menores.
 - El dataset priorizará personajes sintéticos y activos autorizados.
 - Se evaluará similitud no deseada con personas reales.
 - Se documentarán sesgos de representación y fallos conocidos.
@@ -101,6 +107,7 @@ Taxonomía inicial de prompt:
 - iOS.
 - Video o animación.
 - Cuerpo completo.
+- Avatares de personas menores de edad, bajo cualquier formulación del prompt.
 - Creación de celebridades o reproducción exacta de personas.
 - Entrenamiento en el teléfono.
 - Generación generalista de escenas.

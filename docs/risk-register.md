@@ -19,6 +19,7 @@ Escala: probabilidad e impacto de 1 a 5. La exposición es su producto.
 | R-13 | El dispositivo físico puede no estar disponible durante una prueba | 2 | 2 | 4 | TECNO KM5s detectado; scripts con serial explícito | Mitigado |
 | R-15 | Presión de memoria en un teléfono con 3.66 GiB | 4 | 5 | 20 | Presupuesto ≤1 GiB y benchmark de varias generaciones | Abierto |
 | R-14 | Java/Gradle incompatibles con Android | 3 | 3 | 9 | Gradle Wrapper y toolchain JDK fijado | Abierto |
+| R-16 | Generación de avatares de menores de edad | 3 | 5 | 15 | Filtro de prompts, captions sólo de adultos y verificación visual de salida | Abierto |
 
 El registro se actualizará cuando cambie una exposición o una mitigación tenga
 evidencia. Los riesgos legales y de exportabilidad son bloqueantes.
