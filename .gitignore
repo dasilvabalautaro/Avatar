@@ -2,6 +2,7 @@
 .env
 .idea/
 .vscode/
+keys-git.md
 .venv/
 __pycache__/
 *.py[cod]

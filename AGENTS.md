@@ -182,4 +182,6 @@ Comandos CLI disponibles (todos emiten resultados explícitos, la mayoría JSON)
   >100 MB) → restauración verificada por hash; los scripts en `scripts/`
   (`package-for-drive.sh`, `restore-from-drive.sh`, `preflight-vast.sh`)
   rechazan rutas inseguras y no suben ni transfieren automáticamente.
-- `git push` lo realiza el usuario; los agentes no empujan cambios.
+- El agente gestiona Git (commits y push) vía SSH
+  (`git@github.com:dasilvabalautaro/Avatar.git`); nunca commitear
+  `keys-git.md` ni ninguna credencial.

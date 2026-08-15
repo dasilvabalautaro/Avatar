@@ -55,8 +55,9 @@ Próxima tarea exacta:
 
 - Workspace: `/Users/davidsilva/VisualStudioCodeProjects/Avatar`.
 - Rama: `main`.
-- Remote: `origin`, repositorio GitHub `dasilvabalautaro/Avatar`.
-- El usuario realiza el push; no hacer push automáticamente.
+- Remote: `origin`, repositorio GitHub `dasilvabalautaro/Avatar`, por SSH.
+- El agente gestiona commits y push; nunca commitear `keys-git.md` ni
+  credenciales.
 - Python verificado: 3.12.14 en `.venv`.
 - Host: macOS Intel.
 - JDK Android:
@@ -369,7 +370,7 @@ evidencia. No actuar todavía.
 - No volver a incluir checksum/posproceso en la latencia de inferencia.
 - No usar NNAPI en el baseline actual.
 - No desplegar `target` todavía.
-- No hacer push; el usuario lo realiza.
+- No commitear `keys-git.md` ni credenciales de ningún tipo.
 - No conservar descargas reconstruibles.
 - Flujo de transferencia obligatorio: máquina local → `.tar` + SHA256SUMS →
   Drive → descarga en Vast; nunca descargar directamente desde Vast.ai y
