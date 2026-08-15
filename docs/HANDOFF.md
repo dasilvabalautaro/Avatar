@@ -28,16 +28,21 @@ Completado:
 - piloto LoRA de 20 pasos ejecutado en RTX 4090 (integración correcta; la
   validación de calidad era inválida por configuración y fue descartada);
 - validador `scripts/validate_wuerstchen_lora.py` corregido a la receta
-  oficial (30 timesteps, fp16, 1024, guía 8.0, prompt negativo).
+  oficial (30 timesteps, fp16, 1024, guía 8.0, prompt negativo);
+- pesos Stage B restaurados en Vast con SHA-256 completo verificado
+  (`c2519641...`) vía descarga autenticada de Drive con rclone/OAuth;
+- compuerta `base-only` superada: rostro de avatar válido a 1024 px
+  (`docs/experiments/wuerstchen-base-only-2026-08-15.md`);
+- piloto LoRA v3 de 20 pasos validado de extremo a extremo con el validador
+  corregido (`docs/experiments/wuerstchen-lora-pilot-v3-2026-08-15.md`);
+- loader del encoder de texto corregido en
+  `scripts/run_wuerstchen_lora_pilot.py` (prefijo `text_model.` y búfer
+  `position_ids`).
 
 En curso:
 
-- Fase 2 — piloto LoRA sobre la release v2; bloqueado por la transferencia
-  de los pesos Stage B.
-- Subida a Drive de `transfer/avatarface-wuerstchen-v2-stageb-fresh-20260815.tar`
-  (34,309,578,752 bytes, SHA-256
-  `c25196411187496755f8c1001a5ce90aa344aa32adabcf26c988d2a8d0a7a92a`),
-  iniciada el 2026-08-15.
+- Fase 2 — decidir el escalado del entrenamiento LoRA (más pasos/datos) con
+  evaluación visual por muestras; ninguna corrida larga pagada todavía.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -45,11 +50,11 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Verificar que la subida a Drive terminó (ID nuevo, tamaño y SHA-256 por
-> rangos de muestra), restaurar los pesos en la instancia Vast con
-> verificación completa de hash y ejecutar la validación `base-only` con el
-> validador corregido. Esa imagen base válida es la compuerta obligatoria
-> antes de repetir el piloto LoRA.
+> Definir el diseño del siguiente experimento LoRA (pasos, lr, tamaño de
+> muestra de evaluación visual) y registrar en un ADR la brecha entre la
+> receta oficial (1024 px, 30 pasos, guía 8.0) y el presupuesto móvil
+> (RNF-03 ≤ 5 s). En paralelo puede iniciarse el filtro de sólo adultos
+> (P2).
 
 ## 2. Repositorio y entorno
 
@@ -290,38 +295,18 @@ Dependencias fijadas:
 ## 9. Próximas tareas, en orden estricto
 
 Las antiguas tareas P0 (loader reproducible, microentrenamiento local
-reanudable, regresión congelada y licencias) están completadas.
+reanudable, regresión congelada y licencias) están completadas. También están
+completadas la restauración de pesos en Vast, la compuerta base-only y la
+repetición del piloto LoRA (ver `docs/experiments/wuerstchen-base-only-2026-08-15.md`
+y `docs/experiments/wuerstchen-lora-pilot-v3-2026-08-15.md`).
 
-### P0. Restauración de pesos en Vast (bloqueada por Drive)
+### P1. Escalado del entrenamiento LoRA
 
-1. Confirmar que la subida del `.tar` fresh terminó y anotar el ID nuevo de
-   Drive.
-2. Verificar tamaño (34,309,578,752 bytes) y SHA-256
-   (`c25196411187496755f8c1001a5ce90aa344aa32adabcf26c988d2a8d0a7a92a`) con
-   descarga por rangos de muestra antes de tocar Vast.
-3. En la instancia Vast: descargar desde Drive, verificar SHA-256 completo,
-   restaurar bajo `models/wuerstchen-v2/` y confirmar el manifiesto con
-   `scripts/verify-model-manifest.py`.
-4. Eliminar el `.tar` remoto tras verificar; no conservar descargas
-   reconstruibles.
-
-### P0. Compuerta base-only
-
-1. Ejecutar `scripts/validate_wuerstchen_lora.py` en modo `base-only` con la
-   receta oficial: 30 timesteps `DEFAULT_STAGE_C_TIMESTEPS`, fp16, 1024,
-   guidance 8.0, prompt negativo y semilla explícita.
-2. Inspección visual de la imagen base: debe ser un rostro válido, no ruido
-   ni mosaico. Registrar estadísticas y hash en `docs/experiments/`.
-3. Si falla, diagnosticar la ruta prior → decoder antes de cualquier LoRA.
-
-### P1. Repetición del piloto LoRA (sólo si la compuerta pasa)
-
-1. Repetir el piloto de 20 pasos sobre la release v2 con
-   `scripts/run_wuerstchen_lora_pilot.py`.
-2. Validar con el validador corregido y hacer inspección visual.
+1. Diseñar el siguiente experimento: más pasos y/o más datos, con conjunto de
+   prompts de evaluación visual fijado de antemano (sólo adultos, RF-09).
+2. Mantener la regla: no pagar corridas largas sin que la muestra anterior sea
+   visualmente válida; la muestra del piloto v3 ya lo es.
 3. Respaldar checkpoints localmente con SHA-256 y detener la GPU al terminar.
-4. No pagar corridas largas hasta que una muestra del piloto sea visualmente
-   válida.
 
 ### P2. Filtro de sólo adultos (requisito rector nuevo)
 
@@ -334,21 +319,20 @@ reanudable, regresión congelada y licencias) están completadas.
 ### P2. Brecha receta oficial vs. presupuesto móvil
 
 La receta base válida (1024 px, 30 pasos, guía 8.0) es mucho más costosa que
-el baseline Android (256 px, 67 ms P50, RNF-03 ≤5 s). Planear destilación o
-reducción de pasos y registrar la decisión en un ADR cuando el piloto dé
-evidencia. No actuar todavía.
+el baseline Android (256 px, 67 ms P50, RNF-03 ≤5 s). El piloto v3 ya aporta
+evidencia de que la receta oficial produce rostros válidos: redactar el ADR
+sobre destilación o reducción de pasos antes de cualquier integración móvil.
 
 ## 10. Puntos de vigilancia activos
 
-- **Subida Drive en curso** (iniciada 2026-08-15): confirmar que el `.tar`
-  fresh de 32 GB termina con ID nuevo. No reutilizar los IDs antiguos de
-  Drive (registrados fuera de Git) ni copias servidor-a-servidor: heredan la
-  misma cuota rechazada.
-- **Hash tras la subida:** verificar por rangos de muestra antes de restaurar
-  en Vast. Los 18.70 GB parciales de la descarga anterior por rangos están
-  descartados y nunca deben usarse para entrenamiento.
-- **Compuerta base-only:** ninguna corrida LoRA nueva hasta que la imagen
-  `base-only` del validador corregido pase inspección visual.
+- **Cuota pública de Drive:** sigue agotada para el paquete Stage B; la vía
+  que funcionó es la descarga autenticada con rclone/OAuth de la cuenta
+  propietaria. El token sólo existe en la instancia; no copiarlo a Git.
+  Los 18.70 GB parciales de la descarga antigua por rangos están descartados
+  y nunca deben usarse para entrenamiento.
+- **Pesos en Vast:** ya restaurados y verificados; si la instancia se
+  destruye, repetir la descarga autenticada (el `.tar` remoto se eliminó
+  tras verificar, como manda la política).
 - **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
   256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad
   de las muestras de `lora-pilot-v2` ni de `lora-pilot-v2-lr1e5`.
@@ -388,5 +372,5 @@ git log -1 --oneline
   --manifest data/smoke-procedural/manifest.json
 ```
 
-Después, comenzar directamente por `P0. Restauración de pesos en Vast` de la
-sección 9 (verificar primero la subida de Drive según la sección 10).
+Después, retomar desde la sección 9 (P1 escalado LoRA, P2 filtro de sólo
+adultos o P2 ADR de la brecha receta/presupuesto).

@@ -26,11 +26,15 @@ def load_text_model(
     model = CLIPTextModel(text_config)
     state: dict[str, torch.Tensor] = {}
     for path in sorted(directory.glob("pytorch_model-*.safetensors")):
+        # Los shards conservan el prefijo "text_model." del CLIP completo;
+        # CLIPTextModel espera claves sin prefijo. "position_ids" es un búfer
+        # no persistente y no forma parte del state_dict.
         state.update(
             {
-                key: value
+                key.removeprefix("text_model."): value
                 for key, value in load_file(str(path)).items()
                 if key.startswith("text_model.")
+                and key != "text_model.embeddings.position_ids"
             }
         )
     model.load_state_dict(state, strict=True)
