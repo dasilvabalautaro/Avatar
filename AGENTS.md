@@ -105,7 +105,7 @@ python -m pip install --no-user --no-cache-dir -e '.[dev]'
 Validación estándar antes de dar por terminado cualquier cambio:
 
 ```bash
-.venv/bin/pytest          # 40 pruebas
+.venv/bin/pytest          # 52 pruebas
 .venv/bin/ruff check .    # sin hallazgos
 .venv/bin/mypy src        # estricto, sin errores
 git diff --check
@@ -170,8 +170,10 @@ Comandos CLI disponibles (todos emiten resultados explícitos, la mayoría JSON)
   (Pillow) y la auditoría valida campos legales, hashes y duplicados.
 - **Prohibido generar, entrenar o validar avatares de menores de edad**: el
   producto es sólo para adultos (RF-09 en `docs/product-requirements.md`,
-  riesgo R-16). El filtro de prompts, las plantillas de captions y la
-  evaluación visual deben aplicar esta restricción.
+  riesgo R-16). El rechazo de prompts de menores está implementado en
+  `AvatarPrompt` (comando `validate-prompt`), las plantillas de captions del
+  generador marcan «of an adult» y la evaluación visual verifica la edad
+  aparente (`docs/lora-scale-1-design.md`).
 - **Nunca** commitear credenciales, tokens, enlaces gated, IDs privados de
   Drive/Vast ni comandos SSH con secretos.
 - Qué no se versiona (ver `.gitignore`): `.venv/`, `data/`, `models/`,

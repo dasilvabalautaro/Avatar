@@ -353,13 +353,14 @@ class ProceduralAvatarDatasetGenerator:
 
     @staticmethod
     def _caption(attributes: dict[str, str]) -> str:
+        """Describe siempre un rostro adulto: el producto es sólo para adultos (RF-09)."""
         accessory = (
             " without accessories"
             if attributes["accessory"] == "none"
             else f" with {attributes['accessory']}"
         )
         return (
-            f"flat vector avatar face, {attributes['expression']} expression, "
+            f"flat vector avatar face of an adult, {attributes['expression']} expression, "
             f"{attributes['face_shape']} face, {attributes['skin_tone']} skin tone, "
             f"{attributes['hair_style']} "
             f"{attributes['hair_color']} hair, {attributes['eye_color']} eyes"

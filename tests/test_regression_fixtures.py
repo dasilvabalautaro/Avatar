@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
-from avatar_face.domain.models import AvatarPrompt
+import pytest
+
+from avatar_face.domain.models import AvatarPrompt, InvalidPromptError
 from avatar_face.infrastructure.dataset.procedural_generator import ProceduralAvatarDatasetGenerator
 
 FIXTURES_PATH = Path("configs/regression-fixtures.json")
@@ -38,3 +40,12 @@ def test_frozen_prompt_regression_inputs_are_valid() -> None:
     ]
 
     assert [prompt.seed for prompt in prompts] == [42, 7, 20_260_813, 2**32 - 1]
+
+
+def test_frozen_minor_prompts_are_rejected() -> None:
+    """RF-09: todo prompt que sugiera un avatar de un menor debe rechazarse."""
+    fixtures = json.loads(FIXTURES_PATH.read_text(encoding="utf-8"))
+
+    for prompt in fixtures["minor_prompt_rejection"]:
+        with pytest.raises(InvalidPromptError, match="menor de edad"):
+            AvatarPrompt(text=prompt["text"], seed=42, image_size=256)

@@ -22,12 +22,12 @@ from run_wuerstchen_lora_pilot import load_text_model
 from transformers import AutoTokenizer, CLIPTextModel
 
 DEFAULT_PROMPT = (
-    "flat vector avatar face, happy expression, square face, porcelain skin tone, "
+    "flat vector avatar face of an adult, happy expression, square face, porcelain skin tone, "
     "side-parted black hair, green eyes with earrings, sky background"
 )
 DEFAULT_NEGATIVE_PROMPT = (
-    "bad anatomy, blurry, fuzzy, extra arms, extra fingers, poorly drawn hands, "
-    "disfigured, tiling, deformed, mutated, drawing"
+    "child, kid, teenager, baby, minor, underage, bad anatomy, blurry, fuzzy, extra arms, "
+    "extra fingers, poorly drawn hands, disfigured, tiling, deformed, mutated, drawing"
 )
 
 

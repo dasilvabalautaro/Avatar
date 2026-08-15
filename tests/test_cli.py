@@ -13,6 +13,12 @@ def test_validate_prompt_returns_two_for_invalid_prompt(capsys: object) -> None:
     assert exit_code == 2
 
 
+def test_validate_prompt_returns_two_for_minor_reference(capsys: object) -> None:
+    exit_code = main(["validate-prompt", "avatar de un niño con gorra"])
+
+    assert exit_code == 2
+
+
 def test_describe_feasibility_command(capsys: object) -> None:
     exit_code = main(["describe-feasibility", "--profile", "target", "--json"])
 

@@ -37,12 +37,18 @@ Completado:
   corregido (`docs/experiments/wuerstchen-lora-pilot-v3-2026-08-15.md`);
 - loader del encoder de texto corregido en
   `scripts/run_wuerstchen_lora_pilot.py` (prefijo `text_model.` y búfer
-  `position_ids`).
+  `position_ids`);
+- filtro de sólo adultos (RF-09) implementado: `AvatarPrompt` rechaza prompts
+  de menores, las plantillas de captions marcan «of an adult» y los fixtures
+  de regresión incluyen prompts de menores rechazados;
+- diseño del experimento LoRA escala-1 fijado (`docs/lora-scale-1-design.md`);
+- ADR 0007: brecha entre la receta oficial y el presupuesto móvil registrada;
+  la integración móvil del modelo real exige destilación o reducción de pasos.
 
 En curso:
 
-- Fase 2 — decidir el escalado del entrenamiento LoRA (más pasos/datos) con
-  evaluación visual por muestras; ninguna corrida larga pagada todavía.
+- Fase 2 — ejecutar el experimento LoRA escala-1 (200 pasos, lr=5e-5, 8
+  prompts de evaluación fijados) en Vast; ninguna corrida pagada todavía.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -50,11 +56,11 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Definir el diseño del siguiente experimento LoRA (pasos, lr, tamaño de
-> muestra de evaluación visual) y registrar en un ADR la brecha entre la
-> receta oficial (1024 px, 30 pasos, guía 8.0) y el presupuesto móvil
-> (RNF-03 ≤ 5 s). En paralelo puede iniciarse el filtro de sólo adultos
-> (P2).
+> Ejecutar el experimento LoRA escala-1 según `docs/lora-scale-1-design.md`:
+> 200 pasos con `lr=5e-5`, evaluación visual de 8 prompts fijos (más sus
+> contrapartes `base-only`), respaldo local con SHA-256 y GPU detenida al
+> cerrar. Fallback documentado: una repetición con `lr=1e-5` si la muestra es
+> inválida.
 
 ## 2. Repositorio y entorno
 
@@ -82,7 +88,7 @@ deben conservarse.
 
 En el momento de este handoff:
 
-- pytest: 40 pruebas superadas;
+- pytest: 52 pruebas superadas;
 - Ruff: sin hallazgos;
 - mypy estricto: sin errores en 38 archivos fuente;
 - Gradle `:app:assembleDebug`: exitoso;
@@ -193,9 +199,10 @@ Contenido generado:
 - train 50, validation 7, test 7;
 - manifiesto: `data/smoke-procedural/manifest.json`;
 - SHA-256 del manifiesto:
-  `146026fb9c4e99ed92ac7ba359b35ff7c9aee69c5f9fd80f29874cac672b7ae2`;
+  `0f7e3699f5b8b1989c2e454c06cdb5d09fc3e4e9f0c21a5a62f1b4d279d9fdd0`;
 - tamaño aproximado: 316 KiB;
 - 64 hashes de imagen únicos;
+- captions con plantilla «flat vector avatar face of an adult, …» (RF-09);
 - sin personas reales, modelos generativos ni assets externos.
 
 El loader consume exclusivamente el manifiesto y el preflight valida los hashes
@@ -298,30 +305,35 @@ Las antiguas tareas P0 (loader reproducible, microentrenamiento local
 reanudable, regresión congelada y licencias) están completadas. También están
 completadas la restauración de pesos en Vast, la compuerta base-only y la
 repetición del piloto LoRA (ver `docs/experiments/wuerstchen-base-only-2026-08-15.md`
-y `docs/experiments/wuerstchen-lora-pilot-v3-2026-08-15.md`).
+y `docs/experiments/wuerstchen-lora-pilot-v3-2026-08-15.md`). Completadas
+además el diseño de escala-1, el ADR 0007 y el filtro de sólo adultos
+(P2, puntos 1–3; el punto 4 queda incorporado a la lista de verificación de
+`docs/lora-scale-1-design.md`).
 
-### P1. Escalado del entrenamiento LoRA
+### P1. Ejecutar el experimento LoRA escala-1
 
-1. Diseñar el siguiente experimento: más pasos y/o más datos, con conjunto de
-   prompts de evaluación visual fijado de antemano (sólo adultos, RF-09).
-2. Mantener la regla: no pagar corridas largas sin que la muestra anterior sea
-   visualmente válida; la muestra del piloto v3 ya lo es.
-3. Respaldar checkpoints localmente con SHA-256 y detener la GPU al terminar.
-
-### P2. Filtro de sólo adultos (requisito rector nuevo)
-
-1. Implementar el rechazo de prompts de menores en `validate-prompt` (RF-09).
-2. Garantizar que las plantillas de captions del generador procedimental sólo
-   describan adultos.
-3. Añadir fixtures de regresión con prompts de menores rechazados.
-4. Incluir la verificación de edad aparente en la evaluación visual futura.
+1. Seguir `docs/lora-scale-1-design.md`: 200 pasos, `lr=5e-5`, seed 42, mismo
+   LoRA (rango/alpha 16, dropout 0.05) y release v2.0.0.
+2. Evaluación visual de los 8 prompts fijados, con contrapartes `base-only` a
+   la misma seed; la lista incluye verificación de edad aparente adulta
+   (RF-09).
+3. Mantener la regla: no pagar corridas más largas sin que la muestra anterior
+   sea visualmente válida.
+4. Respaldar checkpoints y muestras localmente con SHA-256 y detener la GPU al
+   terminar.
 
 ### P2. Brecha receta oficial vs. presupuesto móvil
 
-La receta base válida (1024 px, 30 pasos, guía 8.0) es mucho más costosa que
-el baseline Android (256 px, 67 ms P50, RNF-03 ≤5 s). El piloto v3 ya aporta
-evidencia de que la receta oficial produce rostros válidos: redactar el ADR
-sobre destilación o reducción de pasos antes de cualquier integración móvil.
+Cerrada como decisión documentada (ADR 0007): la receta oficial queda para
+GPU; la integración móvil exige destilación o reducción de pasos, que requerirá
+su propio ADR antes de cualquier benchmark del modelo real en el dispositivo.
+
+### P3. Dataset futuro
+
+La release v2.0.0 congelada mantiene los captions sin marca de edad (no
+describen menores, por lo que son conformes). Cuando se genere la próxima
+release (v2.1), usará la plantilla «of an adult» y requerirá nuevo freeze y
+lock SHA-256.
 
 ## 10. Puntos de vigilancia activos
 
@@ -372,5 +384,6 @@ git log -1 --oneline
   --manifest data/smoke-procedural/manifest.json
 ```
 
-Después, retomar desde la sección 9 (P1 escalado LoRA, P2 filtro de sólo
-adultos o P2 ADR de la brecha receta/presupuesto).
+Después, retomar desde la sección 9 (P1 ejecutar el experimento LoRA escala-1
+según `docs/lora-scale-1-design.md`, o P3 si se decide una nueva release de
+dataset).
