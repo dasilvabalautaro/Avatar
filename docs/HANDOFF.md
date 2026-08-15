@@ -43,12 +43,17 @@ Completado:
   de regresión incluyen prompts de menores rechazados;
 - diseño del experimento LoRA escala-1 fijado (`docs/lora-scale-1-design.md`);
 - ADR 0007: brecha entre la receta oficial y el presupuesto móvil registrada;
-  la integración móvil del modelo real exige destilación o reducción de pasos.
+  la integración móvil del modelo real exige destilación o reducción de pasos;
+- experimento LoRA escala-1 completado y validado visualmente: 200 pasos con
+  `lr=5e-5`, 16 muestras válidas (8 LoRA + 8 base-only), todas de adultos;
+  pesos restaurados por descarga directa verificada SHA-256
+  (`docs/experiments/wuerstchen-lora-scale-1-2026-08-15.md`).
 
 En curso:
 
-- Fase 2 — ejecutar el experimento LoRA escala-1 (200 pasos, lr=5e-5, 8
-  prompts de evaluación fijados) en Vast; ninguna corrida pagada todavía.
+- Fase 2 — decidir escala-2 (500–1000 pasos, `lr=5e-5`, 408 muestras de
+  train) con la misma evaluación visual; la instancia quedó encendida con el
+  entorno completo verificado.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -56,15 +61,12 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar el experimento LoRA escala-1 según `docs/lora-scale-1-design.md`.
-> La instancia anterior se descartó antes de entrenar; al contratar la próxima
-> GPU: clonar el repo, instalar las dependencias del piloto, subir el dataset
-> (2.5 MB, ruta directa), copiar `transfer/model-manifest-trimmed-20260815.json`
-> como `models/wuerstchen-v2/model-manifest.json`, descargar los pesos con
-> `scripts/download-wuerstchen-weights.py` (descarga directa verificada, ver
-> sección 11), `preflight-vast`, entrenar 200 pasos con `lr=5e-5` y evaluar
-> los 8 prompts fijos más sus contrapartes `base-only`. Respaldo local con
-> SHA-256 y GPU detenida al cerrar. Estimación total: ~2 horas de GPU.
+> Ejecutar escala-2 si el usuario la autoriza: 500–1000 pasos con `lr=5e-5`
+> sobre las 408 muestras de train de la release v2.0.0, mismo LoRA y seed 42,
+> con la misma evaluación visual de 8 prompts + 8 `base-only` de
+> `docs/lora-scale-1-design.md`. El objetivo es medir si la fidelidad de
+> atributos débiles (color de ojos, accesorios) mejora con más pasos. Respaldo
+> local con SHA-256 y GPU al 0 % al cerrar.
 
 ## 2. Repositorio y entorno
 
@@ -346,14 +348,12 @@ lock SHA-256.
   propietaria. El token sólo existe en la instancia; no copiarlo a Git.
   Los 18.70 GB parciales de la descarga antigua por rangos están descartados
   y nunca deben usarse para entrenamiento.
-- **Pesos en Vast:** la instancia usada hasta el piloto v3 se descartó y el
-  token rclone/OAuth murió con ella. La restauración de pesos usa ahora la
-  descarga directa verificada (sección 11); el paquete local
-  `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB, SHA-256
-  `25704fcb...`) queda sólo como contingencia y puede borrarse cuando la vía
-  directa quede probada. El manifiesto recortado (sin el duplicado
-  `open_clip_model.safetensors`, 10.2 GB) está en
-  `transfer/model-manifest-trimmed-20260815.json`.
+- **Pesos en Vast:** la vía de descarga directa verificada quedó probada en la
+  sesión de escala-1 (33/33 archivos, SHA-256 completo). Si la instancia se
+  destruye, basta repetir: clone + deps + dataset (2.5 MB) +
+  `scripts/download-wuerstchen-weights.py` (~1 h de descarga). El paquete
+  local `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB)
+  puede borrarse: la vía directa ya es la probada.
 - **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
   256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad
   de las muestras de `lora-pilot-v2` ni de `lora-pilot-v2-lr1e5`.
