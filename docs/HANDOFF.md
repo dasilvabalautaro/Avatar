@@ -370,9 +370,11 @@ lock SHA-256.
 - **Pesos en Vast:** la vía de descarga directa verificada quedó probada en la
   sesión de escala-1 (33/33 archivos, SHA-256 completo). Si la instancia se
   destruye, la re-entrada completa la hace `scripts/bootstrap-vast.sh` (ver
-  «Próxima tarea exacta»). El paquete local
-  `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB)
-  puede borrarse: la vía directa ya es la probada.
+  «Próxima tarea exacta»). El paquete local de contingencia
+  `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB) y los
+  checksums huérfanos de paquetes antiguos se borraron el 2026-08-15; en
+  `transfer/` sólo quedan los dos `.tar` de datasets (ruta directa), su
+  `SHA256SUMS`, el manifiesto recortado y el README.
 - **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
   256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad
   de las muestras de `lora-pilot-v2` ni de `lora-pilot-v2-lr1e5`.
