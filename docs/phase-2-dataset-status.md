@@ -35,18 +35,44 @@ registro están en `docs/dataset/source-approval.md` y
 
 ```bash
 .venv/bin/avatar-face generate-training-dataset \
-  --output-dir data/training-procedural-v2 --samples 512 --seed 42
+  --output-dir data/training-procedural-v2-1 --samples 1024 --seed 42
 .venv/bin/avatar-face audit-dataset \
-  --manifest data/training-procedural-v2/manifest.json
+  --manifest data/training-procedural-v2-1/manifest.json
 .venv/bin/avatar-face freeze-dataset \
-  --manifest data/training-procedural-v2/manifest.json \
-  --version v2.0.0
+  --manifest data/training-procedural-v2-1/manifest.json \
+  --version v2.1.0
 .venv/bin/avatar-face train-smoke \
-  --manifest data/training-procedural-v2/manifest.json \
-  --output-dir artifacts/training-procedural-v2 --steps 5
+  --manifest data/training-procedural-v2-1/manifest.json \
+  --output-dir artifacts/training-procedural-v2-1 --steps 5
 ```
 
-## Release local congelada
+## Release local congelada v2.1.0
+
+Se generó y verificó localmente `v2.1.0` el 2026-08-16, con el generador
+`avatarface-procedural-v3`: la plantilla de captions «of an adult» ahora detalla
+la forma de los ojos (`almond`, `round`, `narrow`) y amplía los accesorios
+(gafas cuadradas y gafas de sol), respondiendo al límite de fidelidad observado
+en el experimento de escala-2:
+
+- 1024 PNG; splits `train=818`, `validation=103`, `test=103`;
+- manifiesto SHA-256:
+  `8e54942ef99711eb9c9ef80d2d33611168fc7480024c42b668bd2f62f6d91b5d`;
+- auditoría: 1024 hashes únicos, cero duplicados/similitudes y cero hallazgos;
+- lock: `data/training-procedural-v2-1/dataset-v2.1.0.lock.json`;
+- paquete: `transfer/avatarface-training-procedural-v2-1.tar`, SHA-256
+  `f13d2cb4f8b113c9fd28d70ed265745b75167ee6694140980d0c37ff87afc37a`,
+  5,179,904 bytes; por la regla de transporte (≤100 MB), irá directamente de la
+  máquina local a Vast.ai, sin Drive.
+
+Antes de empaquetar o transferir, y después de descargar en Vast, ejecutar:
+
+```bash
+.venv/bin/avatar-face verify-frozen-dataset \
+  --manifest data/training-procedural-v2-1/manifest.json \
+  --lock data/training-procedural-v2-1/dataset-v2.1.0.lock.json
+```
+
+## Release v2.0.0 (histórica)
 
 Se generó y verificó localmente `v2.0.0` el 2026-08-13:
 
@@ -103,7 +129,7 @@ training completo sobre ella.
 
 ## Regresión congelada
 
-`configs/regression-fixtures.json` fija el generador v2, 64 muestras, seed raíz
+`configs/regression-fixtures.json` fija el generador v3, 64 muestras, seed raíz
 42, hash del manifiesto, ocho captions representativos con sus hashes y cuatro
 prompts con seeds límite. `tests/test_regression_fixtures.py` regenera el
 dataset y rechaza cualquier deriva no declarada.

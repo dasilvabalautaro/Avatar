@@ -54,13 +54,19 @@ Completado:
   divergencia clara vs. base-only y vs. escala-1, pero la fidelidad de
   atributos difíciles (ojos, pecas, accesorios) ya no mejora con más pasos —
   el límite es el dataset, no el entrenamiento
-  (`docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md`).
+  (`docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md`);
+- release de dataset **v2.1.0** generada, auditada y congelada (2026-08-16):
+  generador `avatarface-procedural-v3` con captions «of an adult» que detallan
+  la forma de los ojos (`almond`/`round`/`narrow`) y amplían los accesorios
+  (gafas cuadradas, gafas de sol); 1024 muestras (train 818, validation 103,
+  test 103), lock SHA-256 y paquete de transferencia directa listos
+  (`docs/phase-2-dataset-status.md`).
 
 En curso:
 
-- Fase 2 — siguiente paso: release de dataset **v2.1** (más muestras, captions
-  «of an adult» con más detalle de ojos y accesorios) antes de cualquier
-  corrida más larga. La instancia de escala-2 quedó encendida a la espera de
+- Fase 2 — siguiente paso: repetir el escalado LoRA sobre la release **v2.1.0**
+  (500 pasos, `lr=5e-5`, mismos 8 prompts congelados de evaluación) y comparar
+  contra escala-2. La instancia de escala-2 quedó encendida a la espera de
   decisión del usuario (apagar o reutilizar); GPU verificada al 0 %.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
@@ -69,17 +75,14 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Generar la release de dataset v2.1 y repetir el escalado LoRA sobre ella:
-> 1. Ampliar el generador procedimental: más muestras y plantilla de captions
->    «of an adult» con mayor detalle de ojos y accesorios (la v2.0.0 congelada
->    no describe menores, pero no marca la edad de forma positiva ni detalla
->    esos atributos; ver P3 en la sección 9).
-> 2. Congelar la release (nuevo freeze y lock SHA-256), empaquetar y subir por
->    la ruta directa de `transfer/README.md`.
-> 3. En una GPU Vast (re-entrada con `scripts/bootstrap-vast.sh`, ya probada en
->    escala-2): entrenar 500 pasos con `lr=5e-5` y evaluar con
->    `scripts/eval-visual-lora.sh` (mismo conjunto congelado de 8 prompts).
-> 4. Comparar contra escala-2 con la lista del diseño (incluye edad aparente
+> Entrenar y evaluar el escalado LoRA sobre la release v2.1.0 (ya congelada):
+> 1. Transferir `transfer/avatarface-training-procedural-v2-1.tar` y
+>    `transfer/avatarface-smoke-procedural.tar` con su `SHA256SUMS` por la ruta
+>    directa de `transfer/README.md` (ambos < 100 MB).
+> 2. En una GPU Vast (re-entrada con `scripts/bootstrap-vast.sh`, ya probada en
+>    escala-2 y actualizada a v2.1): entrenar 500 pasos con `lr=5e-5` y evaluar
+>    con `scripts/eval-visual-lora.sh` (mismo conjunto congelado de 8 prompts).
+> 3. Comparar contra escala-2 con la lista del diseño (incluye edad aparente
 >    adulta, RF-09), respaldo local con SHA-256, doc en `docs/experiments/`,
 >    GPU al 0 % y avisar al usuario para apagar la instancia.
 
@@ -113,9 +116,15 @@ En el momento de este handoff:
 - Ruff: sin hallazgos;
 - mypy estricto: sin errores en 38 archivos fuente;
 - Gradle `:app:assembleDebug`: exitoso;
-- smoke dataset: 64 muestras, 64 hashes únicos, cero hallazgos;
+- smoke dataset: 64 muestras, 64 hashes únicos, cero hallazgos (generador v3,
+  manifiesto v1.1.0);
 - release v2.0.0 de entrenamiento congelada, lock SHA-256
   `79ecdd3f36301c4462372be35e93f66cee3e52f51d6992050728da8dc84334a2`;
+- release v2.1.0 de entrenamiento congelada (1024 muestras), manifiesto
+  SHA-256 `8e54942ef99711eb9c9ef80d2d33611168fc7480024c42b668bd2f62f6d91b5d`
+  y paquete `transfer/avatarface-training-procedural-v2-1.tar`
+  (5,179,904 bytes, SHA-256
+  `f13d2cb4f8b113c9fd28d70ed265745b75167ee6694140980d0c37ff87afc37a`);
 - no quedó ningún proceso `com.avatarface.app` activo en el teléfono;
 - la RTX 4090 de Vast quedó a 0 % de utilización y 1 MiB de memoria ocupada.
 
@@ -220,10 +229,11 @@ Contenido generado:
 - train 50, validation 7, test 7;
 - manifiesto: `data/smoke-procedural/manifest.json`;
 - SHA-256 del manifiesto:
-  `0f7e3699f5b8b1989c2e454c06cdb5d09fc3e4e9f0c21a5a62f1b4d279d9fdd0`;
-- tamaño aproximado: 316 KiB;
+  `1c2f7aa82164ee9f07987b707d12b992f4a1f7a9803ff50daf0f120cdcefedba`;
+- tamaño aproximado: 309 KiB;
 - 64 hashes de imagen únicos;
-- captions con plantilla «flat vector avatar face of an adult, …» (RF-09);
+- captions con plantilla «flat vector avatar face of an adult, …» (RF-09), con
+  detalle de forma de ojos y accesorios ampliado (generador v3, v1.1.0);
 - sin personas reales, modelos generativos ni assets externos.
 
 El loader consume exclusivamente el manifiesto y el preflight valida los hashes
@@ -347,13 +357,12 @@ su propio ADR antes de cualquier benchmark del modelo real en el dispositivo.
 
 ### P3. Dataset futuro
 
-La release v2.0.0 congelada mantiene los captions sin marca de edad (no
-describen menores, por lo que son conformes). La próxima release (v2.1) es la
-siguiente tarea activa: escala-2 demostró que el límite de fidelidad de
-atributos (color de ojos, pecas, accesorios) está en el dataset y no en los
-pasos de entrenamiento. v2.1 usará la plantilla «of an adult», añadirá mayor
-detalle de ojos y accesorios en los captions y más muestras, y requerirá nuevo
-freeze y lock SHA-256.
+Release v2.1.0 completada (2026-08-16): el generador v3 usa la plantilla
+«of an adult» con detalle de forma de ojos (`eye_shape`) y accesorios ampliados
+(gafas cuadradas, gafas de sol), y la release duplica las muestras (1024).
+Quedó congelada con nuevo lock SHA-256 y empaquetada para la ruta directa.
+Pendiente: la corrida LoRA de 500 pasos sobre v2.1.0 y su comparación con
+escala-2 (ver «Próxima tarea exacta» en la sección 1).
 
 ## 10. Puntos de vigilancia activos
 
@@ -367,9 +376,12 @@ freeze y lock SHA-256.
   destruye, la re-entrada completa la hace `scripts/bootstrap-vast.sh` (ver
   «Próxima tarea exacta»). El paquete local de contingencia
   `transfer/avatarface-wuerstchen-v2-trimmed-20260815.tar` (24.1 GB) y los
-  checksums huérfanos de paquetes antiguos se borraron el 2026-08-15; en
-  `transfer/` sólo quedan los dos `.tar` de datasets (ruta directa), su
-  `SHA256SUMS`, el manifiesto recortado y el README.
+  checksums huérfanos de paquetes antiguos se borraron el 2026-08-15. En
+  `transfer/` conviven los `.tar` históricos de v2.0.0/smoke v1
+  (`avatarface-training-procedural-v2-dataset.tar`, `avatarface-smoke-dataset.tar`,
+  ya obsoletos y reconstruibles) con los paquetes vigentes de la release v2.1.0
+  (`avatarface-training-procedural-v2-1.tar`, `avatarface-smoke-procedural.tar`),
+  su `SHA256SUMS`, el manifiesto recortado y el README.
 - **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
   256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad
   de las muestras de `lora-pilot-v2` ni de `lora-pilot-v2-lr1e5`.
@@ -414,5 +426,6 @@ git log -1 --oneline
   --manifest data/smoke-procedural/manifest.json
 ```
 
-Después, retomar desde la sección 9 (P3: release de dataset v2.1 y repetición
-del escalado LoRA sobre ella; ver «Próxima tarea exacta» en la sección 1).
+Después, retomar desde la sección 9 (P3: la release v2.1.0 ya está congelada y
+empaquetada; falta la repetición del escalado LoRA sobre ella — ver «Próxima
+tarea exacta» en la sección 1).

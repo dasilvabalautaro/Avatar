@@ -35,17 +35,17 @@ el flujo de la regla de transporte.
 Desde la raíz del repositorio, auditar los datos y preparar un paquete:
 
 ```bash
-.venv/bin/avatar-face audit-dataset --manifest data/training-procedural-v2/manifest.json
+.venv/bin/avatar-face audit-dataset --manifest data/training-procedural-v2-1/manifest.json
 .venv/bin/avatar-face verify-frozen-dataset \
-  --manifest data/training-procedural-v2/manifest.json \
-  --lock data/training-procedural-v2/dataset-v2.0.0.lock.json
-scripts/package-for-drive.sh data/training-procedural-v2
+  --manifest data/training-procedural-v2-1/manifest.json \
+  --lock data/training-procedural-v2-1/dataset-v2.1.0.lock.json
+scripts/package-for-drive.sh data/training-procedural-v2-1
 .venv/bin/avatar-face preflight-vast --local \
-  --manifest data/training-procedural-v2/manifest.json
+  --manifest data/training-procedural-v2-1/manifest.json
 ```
 
 El último comando sólo prueba el paquete en macOS/Linux local: no puede validar
-CUDA. El paquete actual mide 2,577,920 bytes (≈2.5 MB), así que sigue la ruta
+CUDA. El paquete actual mide 5,179,904 bytes (≈5 MB), así que sigue la ruta
 directa máquina local → Vast.ai; no se sube a Drive. Conservar el `.tar` y
 `SHA256SUMS` hasta comprobar la restauración remota.
 
@@ -62,7 +62,7 @@ directa máquina local → Vast.ai; no se sube a Drive. Conservar el `.tar` y
    comprobar su SHA-256 y deja el manifiesto para la auditoría posterior.
 
 ```bash
-scripts/restore-from-drive.sh /tmp/avatarface-transfer/avatarface-training-procedural-v2-dataset.tar \
+scripts/restore-from-drive.sh /tmp/avatarface-transfer/avatarface-training-procedural-v2-1.tar \
   /tmp/avatarface-transfer/SHA256SUMS /workspace/AvatarFace
 /workspace/AvatarFace/.venv/bin/avatar-face preflight-vast
 ```

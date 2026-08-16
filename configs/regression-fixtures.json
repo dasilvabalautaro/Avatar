@@ -3,60 +3,60 @@
   "status": "frozen",
   "purpose": "Stable inputs and expected captions for smoke-dataset and generation regression checks.",
   "smoke_dataset": {
-    "generator": "avatarface-procedural-v2",
+    "generator": "avatarface-procedural-v3",
     "samples": 64,
     "seed": 42,
     "image_size": 256,
-    "manifest_sha256": "0f7e3699f5b8b1989c2e454c06cdb5d09fc3e4e9f0c21a5a62f1b4d279d9fdd0"
+    "manifest_sha256": "1c2f7aa82164ee9f07987b707d12b992f4a1f7a9803ff50daf0f120cdcefedba"
   },
   "caption_regression": [
     {
       "identifier": "avatar-00000",
       "split": "test",
-      "caption": "flat vector avatar face of an adult, happy expression, square face, porcelain skin tone, side-parted black hair, green eyes with earrings, sky background",
-      "sha256": "f20664540d6a954b9b12684f38592c240f76a9ea9a0c01297938e031b5bb6dcc"
+      "caption": "flat vector avatar face of an adult, happy expression, square face, porcelain skin tone, side-parted black hair, green almond eyes without accessories, sky background",
+      "sha256": "84518988c43621667e65b0cee082b2e95ae7e58e7a9e23b6cf5d07e26bcbc342"
     },
     {
       "identifier": "avatar-00001",
       "split": "validation",
-      "caption": "flat vector avatar face of an adult, confident expression, heart face, light skin tone, bob brown hair, gray eyes with freckles, lavender background",
-      "sha256": "1f740d2950b8820a271470503b8755cfc0c9172c713c86c85b411b733afe9bdc"
+      "caption": "flat vector avatar face of an adult, confident expression, heart face, light skin tone, bob brown hair, gray round eyes with round glasses, lavender background",
+      "sha256": "6b071250dec69a0f1f5cf351765e154db63f2efcfe943ba74596eed1b53de2ef"
     },
     {
       "identifier": "avatar-00020",
       "split": "test",
-      "caption": "flat vector avatar face of an adult, confident expression, oval face, deep skin tone, curly pink hair, blue eyes with freckles, sand background",
-      "sha256": "3e0b159af9d441b092e6ab6217fd6d8e33ebd255a99f973b84310cc22f2639b7"
+      "caption": "flat vector avatar face of an adult, confident expression, oval face, deep skin tone, curly pink hair, blue narrow eyes with freckles, sand background",
+      "sha256": "6579707b3a45b84ad6b198cd60fb58538644ab13d5b7b10f9f44611bfa637302"
     },
     {
       "identifier": "avatar-00021",
       "split": "validation",
-      "caption": "flat vector avatar face of an adult, smiling expression, square face, porcelain skin tone, side-parted black hair, green eyes without accessories, coral background",
+      "caption": "flat vector avatar face of an adult, smiling expression, square face, porcelain skin tone, side-parted black hair, green round eyes without accessories, coral background",
       "sha256": "d24dc45c462f4439fddc7d4bc70167a9a71dcf828243cbd9456f506c0bf81ee9"
     },
     {
       "identifier": "avatar-00040",
       "split": "test",
-      "caption": "flat vector avatar face of an adult, smiling expression, round face, brown skin tone, short blue hair, brown eyes without accessories, mint background",
-      "sha256": "fecf12cf070adfc70fc209dcb39c9a75649665403a289476bb5ad1ca220ee227"
+      "caption": "flat vector avatar face of an adult, smiling expression, round face, brown skin tone, short blue hair, brown narrow eyes with earrings, mint background",
+      "sha256": "1045eaaee90f04f362d268f063d111803e3d508c09da66bdcaa105647e493e8d"
     },
     {
       "identifier": "avatar-00041",
       "split": "validation",
-      "caption": "flat vector avatar face of an adult, calm expression, oval face, deep skin tone, curly pink hair, blue eyes with round glasses, sky background",
-      "sha256": "f3b5e0c9fdf892b14dc2ad8a863039dfb5cb880413bfa927b33255afe437ae47"
+      "caption": "flat vector avatar face of an adult, calm expression, oval face, deep skin tone, curly pink hair, blue almond eyes with freckles, sky background",
+      "sha256": "8949a59a3504d3deccd4ad5c34b2111f8fd630211ca8d138750c34e672292ad2"
     },
     {
       "identifier": "avatar-00060",
       "split": "test",
-      "caption": "flat vector avatar face of an adult, calm expression, heart face, golden skin tone, bob blue hair, gray eyes with round glasses, lavender background",
-      "sha256": "cd6c943f3fcd6b46e22950c2b8120c248989793dd3c21b940b63cdcb4d11da9c"
+      "caption": "flat vector avatar face of an adult, calm expression, heart face, golden skin tone, bob blue hair, gray narrow eyes with square glasses, lavender background",
+      "sha256": "1ffd45886f0a4a74d2b00101926108d14a9fd281c56dcba4d3fc6186e11f29bc"
     },
     {
       "identifier": "avatar-00061",
       "split": "validation",
-      "caption": "flat vector avatar face of an adult, happy expression, round face, tan skin tone, short pink hair, brown eyes with earrings, sand background",
-      "sha256": "44ba8485c75c7b2b2d4c34147e46ebf71358e5cffa0d6444a93bce795f43e81c"
+      "caption": "flat vector avatar face of an adult, happy expression, round face, tan skin tone, short pink hair, brown almond eyes with sunglasses, sand background",
+      "sha256": "94b7268362c3231aeeac2ed8a97e0491de21ed2fdb1f270f3ad33e47bdce1abc"
     }
   ],
   "prompt_regression": [

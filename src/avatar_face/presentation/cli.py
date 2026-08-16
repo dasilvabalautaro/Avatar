@@ -108,9 +108,10 @@ def _parser() -> argparse.ArgumentParser:
         "generate-training-dataset",
         help="Genera el corpus ampliado desde fuentes de avatar aprobadas.",
     )
-    training_dataset.add_argument("--output-dir", default="data/training-procedural-v2")
-    training_dataset.add_argument("--samples", type=int, default=512)
+    training_dataset.add_argument("--output-dir", default="data/training-procedural-v2-1")
+    training_dataset.add_argument("--samples", type=int, default=1024)
     training_dataset.add_argument("--seed", type=int, default=42)
+    training_dataset.add_argument("--version", default="2.1.0")
     training_dataset.add_argument("--overwrite", action="store_true")
 
     dataset_audit = commands.add_parser(
@@ -322,14 +323,14 @@ def _generate_smoke_dataset(output_directory: str, samples: int, seed: int, over
 
 
 def _generate_training_dataset(
-    output_directory: str, samples: int, seed: int, overwrite: bool
+    output_directory: str, samples: int, seed: int, overwrite: bool, version: str
 ) -> int:
     from avatar_face.infrastructure.dataset.procedural_generator import (
         ProceduralAvatarDatasetGenerator,
     )
 
     result = ProceduralAvatarDatasetGenerator().generate_training(
-        output_directory, samples, seed, overwrite
+        output_directory, samples, seed, overwrite, version
     )
     print(json.dumps(asdict(result), indent=2, ensure_ascii=False))
     return 0
@@ -447,7 +448,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
         )
     if parsed.command == "generate-training-dataset":
         return _generate_training_dataset(
-            parsed.output_dir, parsed.samples, parsed.seed, parsed.overwrite
+            parsed.output_dir, parsed.samples, parsed.seed, parsed.overwrite, parsed.version
         )
     if parsed.command == "audit-dataset":
         return _audit_dataset(parsed.manifest)

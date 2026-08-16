@@ -73,8 +73,8 @@ class ProceduralAvatarDatasetGenerator:
             "schema_version": 1,
             "dataset": {
                 "name": "avatarface-smoke-procedural",
-                "version": "1.0.0",
-                "generator": "avatarface-procedural-v2",
+                "version": "1.1.0",
+                "generator": "avatarface-procedural-v3",
                 "seed": seed,
                 "image_size": self.image_size,
                 "license_id": "CC0-1.0",
@@ -109,11 +109,14 @@ class ProceduralAvatarDatasetGenerator:
         samples: int,
         seed: int,
         overwrite: bool = False,
+        version: str = "2.1.0",
     ) -> DatasetGenerationResult:
         """Genera el corpus ampliado desde la única fuente aprobada actualmente.
 
         No descarga ni mezcla activos: la procedencia queda ligada al registro
         ``AF-PROC-001`` y el esquema 2 añade la política de fuentes al manifiesto.
+        La versión 2.1 es la primera con la plantilla «of an adult» que detalla
+        la forma de los ojos y un vocabulario de accesorios más amplio.
         """
         if not 100 <= samples <= 10_000:
             raise ValueError("El dataset ampliado debe contener entre 100 y 10,000 muestras.")
@@ -156,8 +159,8 @@ class ProceduralAvatarDatasetGenerator:
             "schema_version": 2,
             "dataset": {
                 "name": "avatarface-training-procedural",
-                "version": "2.0.0",
-                "generator": "avatarface-procedural-v2",
+                "version": version,
+                "generator": "avatarface-procedural-v3",
                 "seed": seed,
                 "image_size": self.image_size,
                 "license_id": "CC0-1.0",
@@ -223,8 +226,19 @@ class ProceduralAvatarDatasetGenerator:
             ("smiling", "calm", "happy", "confident"), index, seed, 13
         )
         accessory = self._stratified_choice(
-            ("none", "round glasses", "earrings", "freckles"), index, seed, 17
+            (
+                "none",
+                "round glasses",
+                "square glasses",
+                "sunglasses",
+                "earrings",
+                "freckles",
+            ),
+            index,
+            seed,
+            17,
         )
+        eye_shape = self._stratified_choice(("almond", "round", "narrow"), index, seed, 37)
         hair_style = self._stratified_choice(
             ("short", "curly", "side-parted", "bob"), index, seed, 19
         )
@@ -274,8 +288,25 @@ class ProceduralAvatarDatasetGenerator:
             draw.ellipse((63, 72, 193, 219), fill=skin)
 
         for eye_x in (94, 162):
-            draw.ellipse((eye_x - 14, 123, eye_x + 14, 141), fill="#FFFDF8")
-            draw.ellipse((eye_x - 6, 126, eye_x + 6, 138), fill=eye)
+            if eye_shape == "almond":
+                white_box = (eye_x - 16, 126, eye_x + 16, 138)
+                iris_radius = 6
+            elif eye_shape == "narrow":
+                white_box = (eye_x - 12, 127, eye_x + 12, 137)
+                iris_radius = 5
+            else:
+                white_box = (eye_x - 14, 123, eye_x + 14, 141)
+                iris_radius = 6
+            draw.ellipse(white_box, fill="#FFFDF8")
+            draw.ellipse(
+                (
+                    eye_x - iris_radius,
+                    white_box[1] + 3,
+                    eye_x + iris_radius,
+                    white_box[1] + 3 + iris_radius * 2,
+                ),
+                fill=eye,
+            )
             draw.ellipse((eye_x - 2, 129, eye_x + 2, 135), fill="#171417")
         if brow_style == "arched":
             draw.arc((78, 109, 110, 128), 195, 345, fill=hair, width=4)
@@ -302,6 +333,14 @@ class ProceduralAvatarDatasetGenerator:
             draw.ellipse((73, 114, 113, 151), outline="#2A2D34", width=4)
             draw.ellipse((143, 114, 183, 151), outline="#2A2D34", width=4)
             draw.line((113, 131, 143, 131), fill="#2A2D34", width=4)
+        elif accessory == "square glasses":
+            draw.rounded_rectangle((74, 115, 112, 150), radius=6, outline="#2A2D34", width=4)
+            draw.rounded_rectangle((144, 115, 182, 150), radius=6, outline="#2A2D34", width=4)
+            draw.line((112, 131, 144, 131), fill="#2A2D34", width=4)
+        elif accessory == "sunglasses":
+            draw.rounded_rectangle((73, 118, 113, 147), radius=10, fill="#211A1D")
+            draw.rounded_rectangle((143, 118, 183, 147), radius=10, fill="#211A1D")
+            draw.line((113, 128, 143, 128), fill="#211A1D", width=4)
         elif accessory == "earrings":
             draw.ellipse((44, 154, 54, 168), fill="#F4D35E")
             draw.ellipse((202, 154, 212, 168), fill="#F4D35E")
@@ -320,6 +359,7 @@ class ProceduralAvatarDatasetGenerator:
             "brow_style": brow_style,
             "nose_style": nose_style,
             "eye_color": eye_name,
+            "eye_shape": eye_shape,
             "expression": expression,
             "accessory": accessory,
         }
@@ -353,7 +393,12 @@ class ProceduralAvatarDatasetGenerator:
 
     @staticmethod
     def _caption(attributes: dict[str, str]) -> str:
-        """Describe siempre un rostro adulto: el producto es sólo para adultos (RF-09)."""
+        """Describe siempre un rostro adulto: el producto es sólo para adultos (RF-09).
+
+        Desde el generador v3 el caption detalla la forma de los ojos y un
+        vocabulario de accesorios más amplio, porque las corridas de escala
+        mostraron que la fidelidad de esos atributos depende del dataset.
+        """
         accessory = (
             " without accessories"
             if attributes["accessory"] == "none"
@@ -363,6 +408,7 @@ class ProceduralAvatarDatasetGenerator:
             f"flat vector avatar face of an adult, {attributes['expression']} expression, "
             f"{attributes['face_shape']} face, {attributes['skin_tone']} skin tone, "
             f"{attributes['hair_style']} "
-            f"{attributes['hair_color']} hair, {attributes['eye_color']} eyes"
+            f"{attributes['hair_color']} hair, {attributes['eye_color']} "
+            f"{attributes['eye_shape']} eyes"
             f"{accessory}, {attributes['background']} background"
         )

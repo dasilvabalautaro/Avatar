@@ -54,9 +54,12 @@ evita ese riesgo porque no representa personas reales. Esta documentación no
 constituye asesoría legal.
 
 La regresión de generación está congelada en
-`configs/regression-fixtures.json`: fija el generador v2, la seed raíz 42, hash
+`configs/regression-fixtures.json`: fija el generador v3, la seed raíz 42, hash
 del manifiesto y captions representativos con sus hashes. No se actualizará por
 regeneración accidental; todo cambio exige revisar su causa y este datasheet.
+La plantilla vigente es «flat vector avatar face of an adult, …» con detalle de
+forma de ojos y accesorios ampliado (generador v3, release de entrenamiento
+v2.1.0).
 
 ## Limitaciones
 

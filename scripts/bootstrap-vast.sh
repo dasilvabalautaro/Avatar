@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Prepara una instancia Vast NUEVA para el entrenamiento LoRA (escala-1/2).
+# Prepara una instancia Vast NUEVA para el entrenamiento LoRA (escala sobre v2.1).
 #
 # Requisitos previos (ruta directa, ambos < 100 MB), desde la máquina local:
-#   scp -P PUERTO transfer/avatarface-training-procedural-v2-dataset.tar \
-#       transfer/avatarface-smoke-dataset.tar transfer/SHA256SUMS \
+#   scp -P PUERTO transfer/avatarface-training-procedural-v2-1.tar \
+#       transfer/avatarface-smoke-procedural.tar transfer/SHA256SUMS \
 #       root@IP:/tmp/avatarface-transfer/
 #
 # Uso en la instancia:  bash scripts/bootstrap-vast.sh [/workspace/AvatarFace]
@@ -31,10 +31,10 @@ pip install --no-cache-dir \
 pip install --no-cache-dir -e .
 
 scripts/restore-from-drive.sh \
-  "$transfer_dir/avatarface-training-procedural-v2-dataset.tar" \
+  "$transfer_dir/avatarface-training-procedural-v2-1.tar" \
   "$transfer_dir/SHA256SUMS" "$repo"
 scripts/restore-from-drive.sh \
-  "$transfer_dir/avatarface-smoke-dataset.tar" \
+  "$transfer_dir/avatarface-smoke-procedural.tar" \
   "$transfer_dir/SHA256SUMS" "$repo"
 
 # El preflight exige el SHA256SUMS dentro del repo; copiarlo junto al manifiesto.
@@ -45,8 +45,8 @@ python scripts/download-wuerstchen-weights.py \
   --manifest models/wuerstchen-v2/model-manifest.json
 
 avatar-face verify-frozen-dataset \
-  --manifest data/training-procedural-v2/manifest.json \
-  --lock data/training-procedural-v2/dataset-v2.0.0.lock.json
-avatar-face audit-dataset --manifest data/training-procedural-v2/manifest.json
+  --manifest data/training-procedural-v2-1/manifest.json \
+  --lock data/training-procedural-v2-1/dataset-v2.1.0.lock.json
+avatar-face audit-dataset --manifest data/training-procedural-v2-1/manifest.json
 avatar-face preflight-vast
 echo "BOOTSTRAP_OK: instancia lista para entrenar"

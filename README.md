@@ -60,8 +60,8 @@ avatar-face status --json
 avatar-face audit-candidates --json
 avatar-face generate-smoke-dataset --samples 64 --seed 42
 avatar-face audit-dataset
-avatar-face generate-training-dataset --samples 512 --seed 42
-avatar-face freeze-dataset --manifest data/training-procedural-v2/manifest.json --version v2.0.0
+avatar-face generate-training-dataset --samples 1024 --seed 42
+avatar-face freeze-dataset --manifest data/training-procedural-v2-1/manifest.json --version v2.1.0
 ```
 
 No se descargan modelos ni datasets durante la instalación base. Datos, pesos,

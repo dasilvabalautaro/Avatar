@@ -70,13 +70,15 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--learning-rate", type=float, default=1e-5)
+    parser.add_argument("--dataset-dir", type=Path, default=Path("data/training-procedural-v2-1"))
     args = parser.parse_args()
     torch.manual_seed(42)
     device = torch.device("cuda")
     dtype = torch.bfloat16
     root = args.root
+    dataset_dir = root / args.dataset_dir
     model_root = root / "models" / "wuerstchen-v2"
-    manifest = json.loads((root / "data/training-procedural-v2/manifest.json").read_text())
+    manifest = json.loads((dataset_dir / "manifest.json").read_text())
     train = [x for x in manifest["samples"] if x["split"] == "train"][: max(args.steps, 20)]
     tokenizer_model, tokenizer = load_text_model(model_root / "text-encoder", device, dtype)
     image_encoder = load_effnet(model_root / "stage-b-encoder/model_v2_stage_b.pt", device, dtype)
@@ -110,7 +112,7 @@ def main() -> None:
         record = train[step % len(train)]
         image = (
             image_transform(
-                Image.open(root / "data/training-procedural-v2" / record["image"]).convert("RGB")
+                Image.open(dataset_dir / record["image"]).convert("RGB")
             )
             .unsqueeze(0)
             .to(device=device, dtype=dtype)

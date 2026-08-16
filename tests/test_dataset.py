@@ -84,7 +84,14 @@ def test_procedural_dataset_balances_primary_strata(tmp_path: Path) -> None:
     )
     payload = json.loads(Path(result.manifest_path).read_text(encoding="utf-8"))
 
-    for attribute in ("skin_tone", "hair_style", "expression", "accessory", "face_shape"):
+    for attribute in (
+        "skin_tone",
+        "hair_style",
+        "expression",
+        "accessory",
+        "face_shape",
+        "eye_shape",
+    ):
         counts: dict[str, int] = {}
         for sample in payload["samples"]:
             value = sample["attributes"][attribute]
@@ -97,10 +104,13 @@ def test_expanded_dataset_is_auditable_and_can_be_frozen(tmp_path: Path) -> None
         str(tmp_path / "dataset"), 100, 42
     )
     manifest = Path(result.manifest_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
 
     audit = JsonDatasetAuditor().audit(manifest)
     release = freeze_dataset(manifest, tmp_path / "dataset" / "dataset-v2.lock.json", "v2.0.0")
 
+    assert payload["dataset"]["version"] == "2.1.0"
+    assert payload["dataset"]["generator"] == "avatarface-procedural-v3"
     assert audit.approved
     assert result.train_samples == 80
     assert result.validation_samples == 10
