@@ -1,6 +1,6 @@
 # Handoff de AvatarFace
 
-Actualizado: 2026-08-15, zona horaria `America/La_Paz`.
+Actualizado: 2026-08-16, zona horaria `America/La_Paz`.
 
 Este documento es el punto de entrada obligatorio para retomar el proyecto en
 otra sesión. El estado descrito corresponde al commit que contiene este archivo;
@@ -47,13 +47,21 @@ Completado:
 - experimento LoRA escala-1 completado y validado visualmente: 200 pasos con
   `lr=5e-5`, 16 muestras válidas (8 LoRA + 8 base-only), todas de adultos;
   pesos restaurados por descarga directa verificada SHA-256
-  (`docs/experiments/wuerstchen-lora-scale-1-2026-08-15.md`).
+  (`docs/experiments/wuerstchen-lora-scale-1-2026-08-15.md`);
+- experimento LoRA escala-2 completado y validado visualmente: 500 pasos con
+  `lr=5e-5` en una instancia nueva vía re-entrada automatizada
+  (`scripts/bootstrap-vast.sh`), 16 muestras válidas, todas de adultos;
+  divergencia clara vs. base-only y vs. escala-1, pero la fidelidad de
+  atributos difíciles (ojos, pecas, accesorios) ya no mejora con más pasos —
+  el límite es el dataset, no el entrenamiento
+  (`docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md`).
 
 En curso:
 
-- Fase 2 — escala-2 autorizada por la compuerta de escala-1: 500–1000 pasos,
-  `lr=5e-5`, 408 muestras de train. La instancia de escala-1 se apagó; la
-  re-entrada a una GPU nueva está automatizada (ver abajo).
+- Fase 2 — siguiente paso: release de dataset **v2.1** (más muestras, captions
+  «of an adult» con más detalle de ojos y accesorios) antes de cualquier
+  corrida más larga. La instancia de escala-2 quedó encendida a la espera de
+  decisión del usuario (apagar o reutilizar); GPU verificada al 0 %.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -61,31 +69,19 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar escala-2 en una GPU nueva. Re-entrada automatizada:
-> 1. Contratar RTX 4090 (≥ 50 GiB libres) y anotar IP/puerto SSH (fuera de Git).
-> 2. Subir los paquetes pequeños por ruta directa:
->    `scp -P PUERTO transfer/avatarface-training-procedural-v2-dataset.tar
->    transfer/avatarface-smoke-dataset.tar transfer/SHA256SUMS
->    root@IP:/tmp/avatarface-transfer/` (crear el directorio antes).
-> 3. En la instancia: `git clone --depth 1 https://github.com/dasilvabalautaro/Avatar.git
->    /workspace/AvatarFace && bash /workspace/AvatarFace/scripts/bootstrap-vast.sh`
->    — instala deps fijadas, restaura datasets verificando SHA-256, descarga
->    los pesos (~1 h) con verificación completa y corre `preflight-vast`.
->    Debe terminar con `BOOTSTRAP_OK` y `ready:true`.
-> 4. Entrenar: `python scripts/run_wuerstchen_lora_pilot.py --root
->    /workspace/AvatarFace --steps 500 --learning-rate 5e-5 --output
->    /workspace/AvatarFace/artifacts/lora-scale-2` (si 500 pasos resultan
->    visualmente idénticos a escala-1, escalar a 1000 en la misma sesión).
-> 5. Evaluar: `bash scripts/eval-visual-lora.sh
->    artifacts/lora-scale-2/pilot-checkpoint.pt artifacts/lora-scale-2/eval`
->    (conjunto congelado de 8 prompts + 8 base-only).
-> 6. Inspección visual con la lista del diseño (incluye edad aparente adulta,
->    RF-09), respaldo local con SHA-256 en `artifacts/lora-scale-2/`, doc de
->    resultados en `docs/experiments/`, GPU al 0 % y avisar al usuario para
->    apagar la instancia.
->
-> Si la instancia de escala-1 sólo quedó detenida (no destruida), reanudarla
-> omite los pasos 2–3 por completo.
+> Generar la release de dataset v2.1 y repetir el escalado LoRA sobre ella:
+> 1. Ampliar el generador procedimental: más muestras y plantilla de captions
+>    «of an adult» con mayor detalle de ojos y accesorios (la v2.0.0 congelada
+>    no describe menores, pero no marca la edad de forma positiva ni detalla
+>    esos atributos; ver P3 en la sección 9).
+> 2. Congelar la release (nuevo freeze y lock SHA-256), empaquetar y subir por
+>    la ruta directa de `transfer/README.md`.
+> 3. En una GPU Vast (re-entrada con `scripts/bootstrap-vast.sh`, ya probada en
+>    escala-2): entrenar 500 pasos con `lr=5e-5` y evaluar con
+>    `scripts/eval-visual-lora.sh` (mismo conjunto congelado de 8 prompts).
+> 4. Comparar contra escala-2 con la lista del diseño (incluye edad aparente
+>    adulta, RF-09), respaldo local con SHA-256, doc en `docs/experiments/`,
+>    GPU al 0 % y avisar al usuario para apagar la instancia.
 
 ## 2. Repositorio y entorno
 
@@ -335,17 +331,13 @@ además el diseño de escala-1, el ADR 0007 y el filtro de sólo adultos
 (P2, puntos 1–3; el punto 4 queda incorporado a la lista de verificación de
 `docs/lora-scale-1-design.md`).
 
-### P1. Ejecutar el experimento LoRA escala-1
+### P1. Experimentos LoRA escala-1 y escala-2
 
-1. Seguir `docs/lora-scale-1-design.md`: 200 pasos, `lr=5e-5`, seed 42, mismo
-   LoRA (rango/alpha 16, dropout 0.05) y release v2.0.0.
-2. Evaluación visual de los 8 prompts fijados, con contrapartes `base-only` a
-   la misma seed; la lista incluye verificación de edad aparente adulta
-   (RF-09).
-3. Mantener la regla: no pagar corridas más largas sin que la muestra anterior
-   sea visualmente válida.
-4. Respaldar checkpoints y muestras localmente con SHA-256 y detener la GPU al
-   terminar.
+Completados (2026-08-15 y 2026-08-16). Escala-2 demostró que más pasos con la
+release v2.0.0 ya no mejoran la fidelidad de atributos; ver
+`docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md`. La re-entrada
+automatizada con `scripts/bootstrap-vast.sh` quedó probada de extremo a
+extremo (incluye la copia de `SHA256SUMS` que exige el preflight).
 
 ### P2. Brecha receta oficial vs. presupuesto móvil
 
@@ -356,9 +348,12 @@ su propio ADR antes de cualquier benchmark del modelo real en el dispositivo.
 ### P3. Dataset futuro
 
 La release v2.0.0 congelada mantiene los captions sin marca de edad (no
-describen menores, por lo que son conformes). Cuando se genere la próxima
-release (v2.1), usará la plantilla «of an adult» y requerirá nuevo freeze y
-lock SHA-256.
+describen menores, por lo que son conformes). La próxima release (v2.1) es la
+siguiente tarea activa: escala-2 demostró que el límite de fidelidad de
+atributos (color de ojos, pecas, accesorios) está en el dataset y no en los
+pasos de entrenamiento. v2.1 usará la plantilla «of an adult», añadirá mayor
+detalle de ojos y accesorios en los captions y más muestras, y requerirá nuevo
+freeze y lock SHA-256.
 
 ## 10. Puntos de vigilancia activos
 
@@ -419,6 +414,5 @@ git log -1 --oneline
   --manifest data/smoke-procedural/manifest.json
 ```
 
-Después, retomar desde la sección 9 (P1 ejecutar el experimento LoRA escala-1
-según `docs/lora-scale-1-design.md`, o P3 si se decide una nueva release de
-dataset).
+Después, retomar desde la sección 9 (P3: release de dataset v2.1 y repetición
+del escalado LoRA sobre ella; ver «Próxima tarea exacta» en la sección 1).

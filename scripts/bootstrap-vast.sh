@@ -37,6 +37,8 @@ scripts/restore-from-drive.sh \
   "$transfer_dir/avatarface-smoke-dataset.tar" \
   "$transfer_dir/SHA256SUMS" "$repo"
 
+# El preflight exige el SHA256SUMS dentro del repo; copiarlo junto al manifiesto.
+cp "$transfer_dir/SHA256SUMS" transfer/SHA256SUMS
 mkdir -p models/wuerstchen-v2
 cp transfer/model-manifest-trimmed-20260815.json models/wuerstchen-v2/model-manifest.json
 python scripts/download-wuerstchen-weights.py \
