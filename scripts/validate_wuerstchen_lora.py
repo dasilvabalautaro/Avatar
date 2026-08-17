@@ -39,6 +39,12 @@ def main() -> None:
     parser.add_argument("--base-only", action="store_true")
     parser.add_argument("--resolution", type=int, default=1024)
     parser.add_argument("--decoder-steps", type=int, default=12)
+    parser.add_argument(
+        "--prior-timesteps",
+        type=int,
+        default=0,
+        help="0 = receta oficial (30); N >= 2 reduce el prior a N pasos",
+    )
     parser.add_argument("--prior-guidance-scale", type=float, default=8.0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
@@ -48,6 +54,16 @@ def main() -> None:
         parser.error("--checkpoint es obligatorio salvo cuando se usa --base-only")
     if args.resolution < 256 or args.resolution % 8:
         parser.error("--resolution debe ser >= 256 y múltiplo de 8")
+    if args.prior_timesteps == 1:
+        parser.error("--prior-timesteps debe ser 0 (receta oficial) o >= 2")
+    if args.prior_timesteps >= 2:
+        # Subconjunto uniforme de la rejilla oficial, conservando los extremos.
+        indices = np.linspace(
+            0, len(DEFAULT_STAGE_C_TIMESTEPS) - 1, args.prior_timesteps
+        ).round().astype(int)
+        prior_timesteps = [DEFAULT_STAGE_C_TIMESTEPS[i] for i in sorted(set(indices))]
+    else:
+        prior_timesteps = DEFAULT_STAGE_C_TIMESTEPS
 
     root = args.root
     model_root = root / "models" / "wuerstchen-v2"
@@ -86,7 +102,7 @@ def main() -> None:
             negative_prompt=args.negative_prompt,
             height=args.resolution,
             width=args.resolution,
-            timesteps=DEFAULT_STAGE_C_TIMESTEPS,
+            timesteps=prior_timesteps,
             guidance_scale=args.prior_guidance_scale,
             generator=generator,
             output_type="pt",
