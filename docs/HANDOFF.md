@@ -1,6 +1,6 @@
 # Handoff de AvatarFace
 
-Actualizado: 2026-08-16, zona horaria `America/La_Paz`.
+Actualizado: 2026-08-17, zona horaria `America/La_Paz`.
 
 Este documento es el punto de entrada obligatorio para retomar el proyecto en
 otra sesión. El estado descrito corresponde al commit que contiene este archivo;
@@ -61,13 +61,21 @@ Completado:
   (gafas cuadradas, gafas de sol); 1024 muestras (train 818, validation 103,
   test 103), lock SHA-256 y paquete de transferencia directa listos
   (`docs/phase-2-dataset-status.md`).
+- experimento LoRA escala-3 completado y validado visualmente (2026-08-17):
+  500 pasos con `lr=5e-5` sobre la release **v2.1.0** en una instancia nueva
+  vía re-entrada automatizada (`scripts/bootstrap-vast.sh`), 16 muestras
+  válidas, todas de adultos; el artefacto de texto del caso 2 desapareció,
+  pero la fidelidad de atributos difíciles (ojos, pecas, pendientes) tampoco
+  mejoró con el doble de muestras y captions más finos — el cuello de botella
+  ya no es el dataset (`docs/experiments/wuerstchen-lora-scale-3-2026-08-17.md`).
 
 En curso:
 
-- Fase 2 — siguiente paso: repetir el escalado LoRA sobre la release **v2.1.0**
-  (500 pasos, `lr=5e-5`, mismos 8 prompts congelados de evaluación) y comparar
-  contra escala-2. La instancia de escala-2 quedó encendida a la espera de
-  decisión del usuario (apagar o reutilizar); GPU verificada al 0 %.
+- Fase 2 — siguiente paso: **decisión del usuario** sobre la dirección tras
+  escala-3 (opciones: subir la resolución de entrenamiento, ampliar
+  módulos/rango del LoRA, o aceptar el techo del piloto y pasar a integración
+  con destilación según ADR 0007). La instancia de escala-3 quedó encendida a
+  la espera de decisión (apagar o reutilizar); GPU verificada al 0 %.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -75,16 +83,13 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Entrenar y evaluar el escalado LoRA sobre la release v2.1.0 (ya congelada):
-> 1. Transferir `transfer/avatarface-training-procedural-v2-1.tar` y
->    `transfer/avatarface-smoke-procedural.tar` con su `SHA256SUMS` por la ruta
->    directa de `transfer/README.md` (ambos < 100 MB).
-> 2. En una GPU Vast (re-entrada con `scripts/bootstrap-vast.sh`, ya probada en
->    escala-2 y actualizada a v2.1): entrenar 500 pasos con `lr=5e-5` y evaluar
->    con `scripts/eval-visual-lora.sh` (mismo conjunto congelado de 8 prompts).
-> 3. Comparar contra escala-2 con la lista del diseño (incluye edad aparente
->    adulta, RF-09), respaldo local con SHA-256, doc en `docs/experiments/`,
->    GPU al 0 % y avisar al usuario para apagar la instancia.
+> No hay tarea de ejecución fijada: escala-3 cerró el ciclo de escalado sobre
+> v2.1.0. Esperar la decisión del usuario entre las opciones listadas en
+> «En curso» (detalles y trade-offs en
+> `docs/experiments/wuerstchen-lora-scale-3-2026-08-17.md`, sección
+> «Conclusión y siguiente paso»). Al retomar: si se entrena de nuevo, la
+> instancia de escala-3 sigue encendida con todo restaurado (pesos, datasets,
+> repo); si no, apagarla para cortar el costo.
 
 ## 2. Repositorio y entorno
 
@@ -125,6 +130,8 @@ En el momento de este handoff:
   y paquete `transfer/avatarface-training-procedural-v2-1.tar`
   (5,179,904 bytes, SHA-256
   `f13d2cb4f8b113c9fd28d70ed265745b75167ee6694140980d0c37ff87afc37a`);
+- checkpoint LoRA escala-3 (500 pasos, `lr=5e-5`, sobre v2.1.0) verificado en
+  local: SHA-256 `fbc61da942288997a59fecbc5fdf1ec2cdd88fcfbc4be88dee6617d45b013b47`;
 - no quedó ningún proceso `com.avatarface.app` activo en el teléfono;
 - la RTX 4090 de Vast quedó a 0 % de utilización y 1 MiB de memoria ocupada.
 
@@ -341,13 +348,16 @@ además el diseño de escala-1, el ADR 0007 y el filtro de sólo adultos
 (P2, puntos 1–3; el punto 4 queda incorporado a la lista de verificación de
 `docs/lora-scale-1-design.md`).
 
-### P1. Experimentos LoRA escala-1 y escala-2
+### P1. Experimentos LoRA escala-1, escala-2 y escala-3
 
-Completados (2026-08-15 y 2026-08-16). Escala-2 demostró que más pasos con la
-release v2.0.0 ya no mejoran la fidelidad de atributos; ver
-`docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md`. La re-entrada
+Completados (2026-08-15, 2026-08-16 y 2026-08-17). Escala-2 demostró que más
+pasos con la release v2.0.0 ya no mejoran la fidelidad de atributos; escala-3
+demostró que tampoco la mejora del dataset (v2.1.0, doble de muestras y
+captions más finos) destraba color de ojos, pecas ni pendientes; ver
+`docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md` y
+`docs/experiments/wuerstchen-lora-scale-3-2026-08-17.md`. La re-entrada
 automatizada con `scripts/bootstrap-vast.sh` quedó probada de extremo a
-extremo (incluye la copia de `SHA256SUMS` que exige el preflight).
+extremo dos veces (incluye la copia de `SHA256SUMS` que exige el preflight).
 
 ### P2. Brecha receta oficial vs. presupuesto móvil
 
@@ -361,8 +371,9 @@ Release v2.1.0 completada (2026-08-16): el generador v3 usa la plantilla
 «of an adult» con detalle de forma de ojos (`eye_shape`) y accesorios ampliados
 (gafas cuadradas, gafas de sol), y la release duplica las muestras (1024).
 Quedó congelada con nuevo lock SHA-256 y empaquetada para la ruta directa.
-Pendiente: la corrida LoRA de 500 pasos sobre v2.1.0 y su comparación con
-escala-2 (ver «Próxima tarea exacta» en la sección 1).
+La corrida LoRA de 500 pasos sobre v2.1.0 y su comparación con escala-2 están
+completadas (2026-08-17): ver «Próxima tarea exacta» en la sección 1 para la
+decisión pendiente del usuario.
 
 ## 10. Puntos de vigilancia activos
 
@@ -426,6 +437,6 @@ git log -1 --oneline
   --manifest data/smoke-procedural/manifest.json
 ```
 
-Después, retomar desde la sección 9 (P3: la release v2.1.0 ya está congelada y
-empaquetada; falta la repetición del escalado LoRA sobre ella — ver «Próxima
-tarea exacta» en la sección 1).
+Después, retomar desde la sección 9 (P1 cerrada con escala-3; la dirección
+siguiente es una decisión del usuario — ver «En curso» y «Próxima tarea
+exacta» en la sección 1).
