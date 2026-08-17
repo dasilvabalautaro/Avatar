@@ -71,6 +71,16 @@ Completado:
 - decisión del usuario registrada (2026-08-17): probar en una sola corrida la
   subida de resolución de entrenamiento y la ampliación del LoRA antes de
   aceptar el techo del piloto; diseño fijado en `docs/lora-scale-4-design.md`;
+- experimento LoRA escala-4 completado y validado visualmente (2026-08-17):
+  500 pasos, `lr=5e-5`, 512 px sobre la release v2.2.0, LoRA rango 32 con
+  módulos atención+FFN (12,582,912 parámetros entrenables), 16 muestras
+  válidas, todas de adultos; **ni la resolución ni la capacidad compraron
+  fidelidad en color de ojos, pecas ni pendientes** (señal parcial: iris
+  ámbar en el caso 5; artefactos nuevos por memorización de la franja de
+  firma). El techo está en el modelo base para estos rasgos finos; conforme a
+  la compuerta del diseño, no se pagan más corridas de este tipo y la
+  siguiente fase es integración con destilación (ADR 0007)
+  (`docs/experiments/wuerstchen-lora-scale-4-2026-08-17.md`);
 - dibujo del generador procedimental escalado a `image_size` con salida a
   256 px verificada bit-idéntica (hashes v1.1.0 y v2.1.0 sin cambio) y CLI
   `generate-training-dataset` con `--image-size`;
@@ -89,12 +99,12 @@ Completado:
 
 En curso:
 
-- Fase 2 — experimento **LoRA escala-4** diseñado y preparado
-  (`docs/lora-scale-4-design.md`): 500 pasos, `lr=5e-5`, resolución 512 sobre
-  v2.2.0, LoRA rango 32 con módulos FFN adicionales. Falta que el usuario
-  contrate la instancia nueva; la de escala-3 sigue encendida a la espera de
-  apagarla (GPU verificada al 0 %). **Antes de contratar hay que commitear y
-  publicar estos cambios**: el bootstrap clona el repo desde GitHub.
+- Fase 2 — siguiente paso: **integración del modelo real con destilación o
+  reducción de pasos (ADR 0007)**, tras aceptar el techo del piloto LoRA
+  confirmado por escala-4. Requiere un ADR propio antes de cualquier benchmark
+  del modelo real en el dispositivo. Las instancias Vast (escala-3 y escala-4)
+  quedaron encendidas a cargo del usuario (GPU verificada al 0 % en ambas al
+  cerrar las sesiones).
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -102,19 +112,11 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar el experimento LoRA escala-4 según `docs/lora-scale-4-design.md`.
-> Secuencia: (1) commitear y publicar los cambios (el bootstrap clona desde
-> GitHub); (2) el usuario contrata la instancia nueva y decide si apaga la de
-> escala-3; (3) `scp` de `transfer/avatarface-training-procedural-v2-2.tar`,
-> `transfer/avatarface-smoke-procedural.tar` y `transfer/SHA256SUMS` a
-> `/tmp/avatarface-transfer/`; (4) en la instancia:
-> `bash scripts/bootstrap-vast.sh /workspace/AvatarFace
-> /tmp/avatarface-transfer training-procedural-v2-2 dataset-2.2.0.lock.json`;
-> (5) entrenar con el comando fijado en el diseño (500 pasos, 512 px, rango
-> 32, módulos atención+FFN); (6) validación visual con los 8 prompts fijos y
-> `--base-only`; (7) respaldo local con SHA-256 en `artifacts/lora-scale-4/`;
-> (8) documento de resultados `docs/experiments/wuerstchen-lora-scale-4-*.md`
-> y apagado de la instancia con GPU al 0 %.
+> Redactar el ADR de destilación/reducción de pasos que exige ADR 0007 antes
+> de cualquier benchmark del modelo real en el dispositivo. El ciclo de
+> escalado LoRA quedó cerrado con escala-4 (techo del modelo base confirmado
+> para rasgos finos). Referencias: `docs/experiments/wuerstchen-lora-scale-4-2026-08-17.md`,
+> ADR 0007 y el baseline Android de la sección 4.
 
 ## 2. Repositorio y entorno
 
@@ -160,8 +162,9 @@ En el momento de este handoff:
   `53fa3b374dc1ed48e59a4510b2348fd43ef6c12027420ccc0fa69e4f4a2616f8` y paquete
   `transfer/avatarface-training-procedural-v2-2.tar` (7,171,584 bytes, SHA-256
   `47744cf589e1160c50d22e852cf7886caebfa2c8fef50ea49f0b66a9c0026fd6`);
-- checkpoint LoRA escala-3 (500 pasos, `lr=5e-5`, sobre v2.1.0) verificado en
-  local: SHA-256 `fbc61da942288997a59fecbc5fdf1ec2cdd88fcfbc4be88dee6617d45b013b47`;
+- checkpoint LoRA escala-4 (500 pasos, `lr=5e-5`, 512 px, rango 32,
+  atención+FFN, sobre v2.2.0) verificado en local: SHA-256
+  `b069f9bbe5651088ddeff71f5be4b496e4840d9985d96560c4faa1c4c7cbc4e2`;
 - no quedó ningún proceso `com.avatarface.app` activo en el teléfono;
 - la RTX 4090 de Vast quedó a 0 % de utilización y 1 MiB de memoria ocupada.
 
@@ -378,16 +381,18 @@ además el diseño de escala-1, el ADR 0007 y el filtro de sólo adultos
 (P2, puntos 1–3; el punto 4 queda incorporado a la lista de verificación de
 `docs/lora-scale-1-design.md`).
 
-### P1. Experimentos LoRA escala-1, escala-2 y escala-3
+### P1. Experimentos LoRA escala-1, escala-2, escala-3 y escala-4
 
 Completados (2026-08-15, 2026-08-16 y 2026-08-17). Escala-2 demostró que más
 pasos con la release v2.0.0 ya no mejoran la fidelidad de atributos; escala-3
 demostró que tampoco la mejora del dataset (v2.1.0, doble de muestras y
-captions más finos) destraba color de ojos, pecas ni pendientes; ver
-`docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md` y
-`docs/experiments/wuerstchen-lora-scale-3-2026-08-17.md`. La re-entrada
-automatizada con `scripts/bootstrap-vast.sh` quedó probada de extremo a
-extremo dos veces (incluye la copia de `SHA256SUMS` que exige el preflight).
+captions más finos) destraba color de ojos, pecas ni pendientes; escala-4
+demostró que tampoco lo destraban la resolución nativa de 512 px (v2.2.0) ni
+el LoRA ampliado (rango 32, atención+FFN): el techo está en el modelo base
+para estos rasgos finos. Ver `docs/experiments/wuerstchen-lora-scale-2-2026-08-16.md`,
+`docs/experiments/wuerstchen-lora-scale-3-2026-08-17.md` y
+`docs/experiments/wuerstchen-lora-scale-4-2026-08-17.md`. El ciclo de escalado
+LoRA queda cerrado; la siguiente fase es integración con destilación (P2).
 
 ### P2. Brecha receta oficial vs. presupuesto móvil
 
