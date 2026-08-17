@@ -8,11 +8,16 @@
 # corridas sólo son válidas con este mismo conjunto.
 #
 # Uso en la instancia, desde la raíz del repo:
-#   bash scripts/eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA
+#   bash scripts/eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA \
+#     [ARGS_EXTRA_VALIDADOR] [--skip-base]
+# Ejemplo (línea base del ADR 0008, sin repetir los base-only de escala-3):
+#   bash scripts/eval-visual-lora.sh ckpt.pt out "--prior-timesteps 12" --skip-base
 set -euo pipefail
 
-checkpoint=${1:?Uso: eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA}
-output=${2:?Uso: eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA}
+checkpoint=${1:?Uso: eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA [ARGS_EXTRA] [--skip-base]}
+output=${2:?Uso: eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA [ARGS_EXTRA] [--skip-base]}
+extra=${3:-}
+skip_base=${4:-}
 root=$(pwd)
 mkdir -p "$output"
 
@@ -29,15 +34,18 @@ prompts=(
 
 for i in "${!prompts[@]}"; do
   n=$(printf "%02d" $((i + 1)))
-  echo "=== base-only $n ==="
-  python scripts/validate_wuerstchen_lora.py \
-    --root "$root" --base-only \
-    --prompt "${prompts[$i]}" \
-    --output "$output/base-$n.png"
+  if [[ "$skip_base" != "--skip-base" ]]; then
+    echo "=== base-only $n ==="
+    python scripts/validate_wuerstchen_lora.py \
+      --root "$root" --base-only \
+      --prompt "${prompts[$i]}" \
+      --output "$output/base-$n.png"
+  fi
   echo "=== lora $n ==="
+  # shellcheck disable=SC2086
   python scripts/validate_wuerstchen_lora.py \
     --root "$root" --checkpoint "$checkpoint" \
-    --prompt "${prompts[$i]}" \
+    --prompt "${prompts[$i]}" $extra \
     --output "$output/lora-$n.png"
 done
 echo "EVAL_VISUAL_COMPLETA: $output"
