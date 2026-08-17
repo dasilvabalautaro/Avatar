@@ -72,6 +72,33 @@ Antes de empaquetar o transferir, y después de descargar en Vast, ejecutar:
   --lock data/training-procedural-v2-1/dataset-v2.1.0.lock.json
 ```
 
+## Release local congelada v2.2.0 (512 px)
+
+Se generó y verificó localmente `2.2.0` el 2026-08-17 para el experimento LoRA
+escala-4 (`docs/lora-scale-4-design.md`): mismo generador
+`avatarface-procedural-v3` y mismas captions que v2.1.0, pero con el dibujo
+escalado a `image_size` y las imágenes nativas a **512 × 512** (la salida a
+256 px quedó verificada bit-idéntica: los hashes de v1.1.0 y v2.1.0 no
+cambiaron):
+
+- 1024 PNG; splits `train=818`, `validation=103`, `test=103`;
+- manifiesto SHA-256:
+  `53fa3b374dc1ed48e59a4510b2348fd43ef6c12027420ccc0fa69e4f4a2616f8`;
+- auditoría: 1024 hashes únicos, cero hallazgos;
+- lock: `data/training-procedural-v2-2/dataset-2.2.0.lock.json`;
+- paquete: `transfer/avatarface-training-procedural-v2-2.tar`,
+  7,171,584 bytes; por la regla de transporte (≤100 MB), irá directamente de la
+  máquina local a Vast.ai, sin Drive.
+
+```bash
+.venv/bin/avatar-face generate-training-dataset \
+  --output-dir data/training-procedural-v2-2 --samples 1024 --seed 42 \
+  --version 2.2.0 --image-size 512
+.venv/bin/avatar-face verify-frozen-dataset \
+  --manifest data/training-procedural-v2-2/manifest.json \
+  --lock data/training-procedural-v2-2/dataset-2.2.0.lock.json
+```
+
 ## Release v2.0.0 (histórica)
 
 Se generó y verificó localmente `v2.0.0` el 2026-08-13:

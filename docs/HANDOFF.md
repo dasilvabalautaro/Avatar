@@ -68,14 +68,33 @@ Completado:
   pero la fidelidad de atributos difíciles (ojos, pecas, pendientes) tampoco
   mejoró con el doble de muestras y captions más finos — el cuello de botella
   ya no es el dataset (`docs/experiments/wuerstchen-lora-scale-3-2026-08-17.md`).
+- decisión del usuario registrada (2026-08-17): probar en una sola corrida la
+  subida de resolución de entrenamiento y la ampliación del LoRA antes de
+  aceptar el techo del piloto; diseño fijado en `docs/lora-scale-4-design.md`;
+- dibujo del generador procedimental escalado a `image_size` con salida a
+  256 px verificada bit-idéntica (hashes v1.1.0 y v2.1.0 sin cambio) y CLI
+  `generate-training-dataset` con `--image-size`;
+- `scripts/run_wuerstchen_lora_pilot.py` parametrizado (`--resolution`,
+  `--lora-rank`, `--lora-alpha`, `--lora-dropout`, `--lora-modules`; la config
+  viaja en el checkpoint) y `scripts/validate_wuerstchen_lora.py` la respeta,
+  con respaldo a los valores históricos de escala 1-3;
+- release de dataset **v2.2.0** generada, auditada y congelada (2026-08-17):
+  1024 muestras nativas de 512 × 512, lock `dataset-2.2.0.lock.json`,
+  manifiesto SHA-256
+  `53fa3b374dc1ed48e59a4510b2348fd43ef6c12027420ccc0fa69e4f4a2616f8`,
+  paquete `transfer/avatarface-training-procedural-v2-2.tar` (7,171,584 bytes,
+  SHA-256 `47744cf589e1160c50d22e852cf7886caebfa2c8fef50ea49f0b66a9c0026fd6`);
+- `scripts/bootstrap-vast.sh` acepta el dataset a restaurar como argumentos
+  opcionales (por defecto sigue restaurando v2.1.0).
 
 En curso:
 
-- Fase 2 — siguiente paso: **decisión del usuario** sobre la dirección tras
-  escala-3 (opciones: subir la resolución de entrenamiento, ampliar
-  módulos/rango del LoRA, o aceptar el techo del piloto y pasar a integración
-  con destilación según ADR 0007). La instancia de escala-3 quedó encendida a
-  la espera de decisión (apagar o reutilizar); GPU verificada al 0 %.
+- Fase 2 — experimento **LoRA escala-4** diseñado y preparado
+  (`docs/lora-scale-4-design.md`): 500 pasos, `lr=5e-5`, resolución 512 sobre
+  v2.2.0, LoRA rango 32 con módulos FFN adicionales. Falta que el usuario
+  contrate la instancia nueva; la de escala-3 sigue encendida a la espera de
+  apagarla (GPU verificada al 0 %). **Antes de contratar hay que commitear y
+  publicar estos cambios**: el bootstrap clona el repo desde GitHub.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -83,13 +102,19 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> No hay tarea de ejecución fijada: escala-3 cerró el ciclo de escalado sobre
-> v2.1.0. Esperar la decisión del usuario entre las opciones listadas en
-> «En curso» (detalles y trade-offs en
-> `docs/experiments/wuerstchen-lora-scale-3-2026-08-17.md`, sección
-> «Conclusión y siguiente paso»). Al retomar: si se entrena de nuevo, la
-> instancia de escala-3 sigue encendida con todo restaurado (pesos, datasets,
-> repo); si no, apagarla para cortar el costo.
+> Ejecutar el experimento LoRA escala-4 según `docs/lora-scale-4-design.md`.
+> Secuencia: (1) commitear y publicar los cambios (el bootstrap clona desde
+> GitHub); (2) el usuario contrata la instancia nueva y decide si apaga la de
+> escala-3; (3) `scp` de `transfer/avatarface-training-procedural-v2-2.tar`,
+> `transfer/avatarface-smoke-procedural.tar` y `transfer/SHA256SUMS` a
+> `/tmp/avatarface-transfer/`; (4) en la instancia:
+> `bash scripts/bootstrap-vast.sh /workspace/AvatarFace
+> /tmp/avatarface-transfer training-procedural-v2-2 dataset-2.2.0.lock.json`;
+> (5) entrenar con el comando fijado en el diseño (500 pasos, 512 px, rango
+> 32, módulos atención+FFN); (6) validación visual con los 8 prompts fijos y
+> `--base-only`; (7) respaldo local con SHA-256 en `artifacts/lora-scale-4/`;
+> (8) documento de resultados `docs/experiments/wuerstchen-lora-scale-4-*.md`
+> y apagado de la instancia con GPU al 0 %.
 
 ## 2. Repositorio y entorno
 
@@ -130,6 +155,11 @@ En el momento de este handoff:
   y paquete `transfer/avatarface-training-procedural-v2-1.tar`
   (5,179,904 bytes, SHA-256
   `f13d2cb4f8b113c9fd28d70ed265745b75167ee6694140980d0c37ff87afc37a`);
+- release v2.2.0 de entrenamiento congelada (1024 muestras nativas de 512 px),
+  manifiesto SHA-256
+  `53fa3b374dc1ed48e59a4510b2348fd43ef6c12027420ccc0fa69e4f4a2616f8` y paquete
+  `transfer/avatarface-training-procedural-v2-2.tar` (7,171,584 bytes, SHA-256
+  `47744cf589e1160c50d22e852cf7886caebfa2c8fef50ea49f0b66a9c0026fd6`);
 - checkpoint LoRA escala-3 (500 pasos, `lr=5e-5`, sobre v2.1.0) verificado en
   local: SHA-256 `fbc61da942288997a59fecbc5fdf1ec2cdd88fcfbc4be88dee6617d45b013b47`;
 - no quedó ningún proceso `com.avatarface.app` activo en el teléfono;
@@ -372,8 +402,10 @@ Release v2.1.0 completada (2026-08-16): el generador v3 usa la plantilla
 (gafas cuadradas, gafas de sol), y la release duplica las muestras (1024).
 Quedó congelada con nuevo lock SHA-256 y empaquetada para la ruta directa.
 La corrida LoRA de 500 pasos sobre v2.1.0 y su comparación con escala-2 están
-completadas (2026-08-17): ver «Próxima tarea exacta» en la sección 1 para la
-decisión pendiente del usuario.
+completadas (2026-08-17). La decisión del usuario quedó registrada el mismo
+día: experimento escala-4 con resolución 512 y LoRA ampliado sobre la release
+v2.2.0; ver «Próxima tarea exacta» en la sección 1 y
+`docs/lora-scale-4-design.md`.
 
 ## 10. Puntos de vigilancia activos
 
@@ -390,8 +422,10 @@ decisión pendiente del usuario.
   checksums huérfanos de paquetes antiguos se borraron el 2026-08-15. En
   `transfer/` conviven los `.tar` históricos de v2.0.0/smoke v1
   (`avatarface-training-procedural-v2-dataset.tar`, `avatarface-smoke-dataset.tar`,
-  ya obsoletos y reconstruibles) con los paquetes vigentes de la release v2.1.0
-  (`avatarface-training-procedural-v2-1.tar`, `avatarface-smoke-procedural.tar`),
+  ya obsoletos y reconstruibles) con los paquetes vigentes de las releases
+  v2.1.0 y v2.2.0 (`avatarface-training-procedural-v2-1.tar`,
+  `avatarface-training-procedural-v2-2.tar`,
+  `avatarface-smoke-procedural.tar`),
   su `SHA256SUMS`, el manifiesto recortado y el README.
 - **Validaciones históricas inválidas:** la validación anterior (4 timesteps,
   256 px, guía por defecto) era inválida; no recuperar conclusiones de calidad

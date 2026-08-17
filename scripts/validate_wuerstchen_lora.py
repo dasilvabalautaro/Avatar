@@ -58,15 +58,19 @@ def main() -> None:
         device=device, dtype=dtype
     )
     if not args.base_only:
-        prior.add_adapter(
-            LoraConfig(
-                r=16,
-                lora_alpha=16,
-                lora_dropout=0.05,
-                target_modules=["to_q", "to_k", "to_v", "to_out.0"],
-            )
-        )
         state = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
+        # Los checkpoints nuevos guardan la configuración LoRA con la que se
+        # entrenaron; los antiguos (escala 1-3) usan los valores históricos.
+        lora_config = state.get(
+            "lora_config",
+            {
+                "r": 16,
+                "lora_alpha": 16,
+                "lora_dropout": 0.05,
+                "target_modules": ["to_q", "to_k", "to_v", "to_out.0"],
+            },
+        )
+        prior.add_adapter(LoraConfig(**lora_config))
         set_peft_model_state_dict(prior, state["lora"])
     prior.eval()
     prior_pipe = WuerstchenPriorPipeline(

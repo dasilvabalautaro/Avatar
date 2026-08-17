@@ -112,6 +112,7 @@ def _parser() -> argparse.ArgumentParser:
     training_dataset.add_argument("--samples", type=int, default=1024)
     training_dataset.add_argument("--seed", type=int, default=42)
     training_dataset.add_argument("--version", default="2.1.0")
+    training_dataset.add_argument("--image-size", type=int, default=256)
     training_dataset.add_argument("--overwrite", action="store_true")
 
     dataset_audit = commands.add_parser(
@@ -323,13 +324,14 @@ def _generate_smoke_dataset(output_directory: str, samples: int, seed: int, over
 
 
 def _generate_training_dataset(
-    output_directory: str, samples: int, seed: int, overwrite: bool, version: str
+    output_directory: str, samples: int, seed: int, overwrite: bool, version: str,
+    image_size: int,
 ) -> int:
     from avatar_face.infrastructure.dataset.procedural_generator import (
         ProceduralAvatarDatasetGenerator,
     )
 
-    result = ProceduralAvatarDatasetGenerator().generate_training(
+    result = ProceduralAvatarDatasetGenerator(image_size=image_size).generate_training(
         output_directory, samples, seed, overwrite, version
     )
     print(json.dumps(asdict(result), indent=2, ensure_ascii=False))
@@ -448,7 +450,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         )
     if parsed.command == "generate-training-dataset":
         return _generate_training_dataset(
-            parsed.output_dir, parsed.samples, parsed.seed, parsed.overwrite, parsed.version
+            parsed.output_dir, parsed.samples, parsed.seed, parsed.overwrite, parsed.version,
+            parsed.image_size,
         )
     if parsed.command == "audit-dataset":
         return _audit_dataset(parsed.manifest)

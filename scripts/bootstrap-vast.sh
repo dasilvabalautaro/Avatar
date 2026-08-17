@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# Prepara una instancia Vast NUEVA para el entrenamiento LoRA (escala sobre v2.1).
+# Prepara una instancia Vast NUEVA para el entrenamiento LoRA (escala sobre v2.x).
 #
 # Requisitos previos (ruta directa, ambos < 100 MB), desde la máquina local:
-#   scp -P PUERTO transfer/avatarface-training-procedural-v2-1.tar \
+#   scp -P PUERTO transfer/avatarface-training-procedural-v2-2.tar \
 #       transfer/avatarface-smoke-procedural.tar transfer/SHA256SUMS \
 #       root@IP:/tmp/avatarface-transfer/
 #
-# Uso en la instancia:  bash scripts/bootstrap-vast.sh [/workspace/AvatarFace]
+# Uso en la instancia:  bash scripts/bootstrap-vast.sh [repo] [transfer_dir] \
+#     [dataset_dir] [dataset_lock]
+# Por defecto restaura data/training-procedural-v2-1 con su lock v2.1.0;
+# para la release 512 px:  bash scripts/bootstrap-vast.sh /workspace/AvatarFace \
+#     /tmp/avatarface-transfer training-procedural-v2-2 dataset-2.2.0.lock.json
 #
 # Idempotente: reclona o actualiza el repo, instala deps fijadas del piloto,
 # restaura los datasets verificando SHA-256, descarga los pesos públicos con
@@ -15,6 +19,8 @@ set -euo pipefail
 
 repo=${1:-/workspace/AvatarFace}
 transfer_dir=${2:-/tmp/avatarface-transfer}
+dataset_dir=${3:-training-procedural-v2-1}
+dataset_lock=${4:-dataset-v2.1.0.lock.json}
 
 if [[ ! -d "$repo/.git" ]]; then
   git clone --depth 1 https://github.com/dasilvabalautaro/Avatar.git "$repo"
@@ -31,7 +37,7 @@ pip install --no-cache-dir \
 pip install --no-cache-dir -e .
 
 scripts/restore-from-drive.sh \
-  "$transfer_dir/avatarface-training-procedural-v2-1.tar" \
+  "$transfer_dir/avatarface-${dataset_dir}.tar" \
   "$transfer_dir/SHA256SUMS" "$repo"
 scripts/restore-from-drive.sh \
   "$transfer_dir/avatarface-smoke-procedural.tar" \
@@ -45,8 +51,8 @@ python scripts/download-wuerstchen-weights.py \
   --manifest models/wuerstchen-v2/model-manifest.json
 
 avatar-face verify-frozen-dataset \
-  --manifest data/training-procedural-v2-1/manifest.json \
-  --lock data/training-procedural-v2-1/dataset-v2.1.0.lock.json
-avatar-face audit-dataset --manifest data/training-procedural-v2-1/manifest.json
+  --manifest "data/${dataset_dir}/manifest.json" \
+  --lock "data/${dataset_dir}/${dataset_lock}"
+avatar-face audit-dataset --manifest "data/${dataset_dir}/manifest.json"
 avatar-face preflight-vast
 echo "BOOTSTRAP_OK: instancia lista para entrenar"

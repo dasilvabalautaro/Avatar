@@ -246,46 +246,70 @@ class ProceduralAvatarDatasetGenerator:
         brow_style = self._stratified_choice(("arched", "straight", "soft"), index, seed, 29)
         nose_style = self._stratified_choice(("small", "straight", "button"), index, seed, 31)
 
+        # El diseño base está definido sobre un lienzo de 256 px; todas las
+        # coordenadas y grosores se escalan al tamaño pedido. Con
+        # ``image_size == 256`` el factor es 1.0 y la salida es bit-idéntica
+        # a la de las releases anteriores.
+        scale = self.image_size / 256
+
+        def p(value: float) -> int:
+            return round(value * scale)
+
+        def w(value: float) -> int:
+            return max(1, round(value * scale))
+
         image = Image.new("RGB", (self.image_size, self.image_size), background)
         draw = ImageDraw.Draw(image)
-        draw.rounded_rectangle((105, 184, 151, 246), radius=18, fill=skin)
+        draw.rounded_rectangle((p(105), p(184), p(151), p(246)), radius=p(18), fill=skin)
         if face_shape == "round":
-            draw.ellipse((48, 68, 208, 226), fill=skin, outline="#4A3030", width=3)
+            draw.ellipse((p(48), p(68), p(208), p(226)), fill=skin, outline="#4A3030", width=w(3))
         elif face_shape == "oval":
-            draw.ellipse((58, 58, 198, 232), fill=skin, outline="#4A3030", width=3)
+            draw.ellipse((p(58), p(58), p(198), p(232)), fill=skin, outline="#4A3030", width=w(3))
         elif face_shape == "square":
             draw.rounded_rectangle(
-                (54, 68, 202, 224), radius=34, fill=skin, outline="#4A3030", width=3
+                (p(54), p(68), p(202), p(224)), radius=p(34), fill=skin,
+                outline="#4A3030", width=w(3),
             )
         else:
             draw.polygon(
                 (
-                    (128, 226),
-                    (60, 139),
-                    (68, 84),
-                    (108, 64),
-                    (128, 91),
-                    (148, 64),
-                    (188, 84),
-                    (196, 139),
+                    (p(128), p(226)),
+                    (p(60), p(139)),
+                    (p(68), p(84)),
+                    (p(108), p(64)),
+                    (p(128), p(91)),
+                    (p(148), p(64)),
+                    (p(188), p(84)),
+                    (p(196), p(139)),
                 ),
                 fill=skin,
                 outline="#4A3030",
-                width=3,
+                width=w(3),
             )
-        draw.ellipse((39, 117, 61, 162), fill=skin)
-        draw.ellipse((195, 117, 217, 162), fill=skin)
+        draw.ellipse((p(39), p(117), p(61), p(162)), fill=skin)
+        draw.ellipse((p(195), p(117), p(217), p(162)), fill=skin)
 
         if hair_style == "short":
-            draw.pieslice((47, 45, 209, 170), 180, 360, fill=hair)
+            draw.pieslice((p(47), p(45), p(209), p(170)), 180, 360, fill=hair)
         elif hair_style == "curly":
             for x in range(59, 204, 24):
-                draw.ellipse((x - 18, 48 + (x % 3) * 5, x + 18, 94), fill=hair)
+                draw.ellipse(
+                    (p(x - 18), p(48 + (x % 3) * 5), p(x + 18), p(94)), fill=hair
+                )
         elif hair_style == "side-parted":
-            draw.polygon(((49, 130), (62, 58), (188, 48), (210, 124), (137, 78)), fill=hair)
+            draw.polygon(
+                (
+                    (p(49), p(130)),
+                    (p(62), p(58)),
+                    (p(188), p(48)),
+                    (p(210), p(124)),
+                    (p(137), p(78)),
+                ),
+                fill=hair,
+            )
         else:
-            draw.rounded_rectangle((45, 49, 211, 179), radius=65, fill=hair)
-            draw.ellipse((63, 72, 193, 219), fill=skin)
+            draw.rounded_rectangle((p(45), p(49), p(211), p(179)), radius=p(65), fill=hair)
+            draw.ellipse((p(63), p(72), p(193), p(219)), fill=skin)
 
         for eye_x in (94, 162):
             if eye_shape == "almond":
@@ -297,56 +321,62 @@ class ProceduralAvatarDatasetGenerator:
             else:
                 white_box = (eye_x - 14, 123, eye_x + 14, 141)
                 iris_radius = 6
-            draw.ellipse(white_box, fill="#FFFDF8")
+            draw.ellipse(tuple(p(v) for v in white_box), fill="#FFFDF8")
             draw.ellipse(
                 (
-                    eye_x - iris_radius,
-                    white_box[1] + 3,
-                    eye_x + iris_radius,
-                    white_box[1] + 3 + iris_radius * 2,
+                    p(eye_x - iris_radius),
+                    p(white_box[1] + 3),
+                    p(eye_x + iris_radius),
+                    p(white_box[1] + 3 + iris_radius * 2),
                 ),
                 fill=eye,
             )
-            draw.ellipse((eye_x - 2, 129, eye_x + 2, 135), fill="#171417")
+            draw.ellipse((p(eye_x - 2), p(129), p(eye_x + 2), p(135)), fill="#171417")
         if brow_style == "arched":
-            draw.arc((78, 109, 110, 128), 195, 345, fill=hair, width=4)
-            draw.arc((146, 109, 178, 128), 195, 345, fill=hair, width=4)
+            draw.arc((p(78), p(109), p(110), p(128)), 195, 345, fill=hair, width=w(4))
+            draw.arc((p(146), p(109), p(178), p(128)), 195, 345, fill=hair, width=w(4))
         elif brow_style == "straight":
-            draw.line((79, 117, 110, 114), fill=hair, width=4)
-            draw.line((146, 114, 177, 117), fill=hair, width=4)
+            draw.line((p(79), p(117), p(110), p(114)), fill=hair, width=w(4))
+            draw.line((p(146), p(114), p(177), p(117)), fill=hair, width=w(4))
         else:
-            draw.arc((78, 112, 110, 127), 200, 340, fill=hair, width=3)
-            draw.arc((146, 112, 178, 127), 200, 340, fill=hair, width=3)
+            draw.arc((p(78), p(112), p(110), p(127)), 200, 340, fill=hair, width=w(3))
+            draw.arc((p(146), p(112), p(178), p(127)), 200, 340, fill=hair, width=w(3))
         if nose_style == "small":
-            draw.line((128, 142, 124, 161, 131, 161), fill="#9A624F", width=3)
+            draw.line((p(128), p(142), p(124), p(161), p(131), p(161)), fill="#9A624F", width=w(3))
         elif nose_style == "straight":
-            draw.line((128, 139, 128, 165), fill="#9A624F", width=3)
+            draw.line((p(128), p(139), p(128), p(165)), fill="#9A624F", width=w(3))
         else:
-            draw.ellipse((122, 157, 134, 168), outline="#9A624F", width=3)
+            draw.ellipse((p(122), p(157), p(134), p(168)), outline="#9A624F", width=w(3))
 
         if expression in {"smiling", "happy"}:
-            draw.arc((103, 159, 153, 197), 10, 170, fill="#7D3340", width=5)
+            draw.arc((p(103), p(159), p(153), p(197)), 10, 170, fill="#7D3340", width=w(5))
         else:
-            draw.arc((108, 169, 148, 188), 190, 350, fill="#7D3340", width=4)
+            draw.arc((p(108), p(169), p(148), p(188)), 190, 350, fill="#7D3340", width=w(4))
 
         if accessory == "round glasses":
-            draw.ellipse((73, 114, 113, 151), outline="#2A2D34", width=4)
-            draw.ellipse((143, 114, 183, 151), outline="#2A2D34", width=4)
-            draw.line((113, 131, 143, 131), fill="#2A2D34", width=4)
+            draw.ellipse((p(73), p(114), p(113), p(151)), outline="#2A2D34", width=w(4))
+            draw.ellipse((p(143), p(114), p(183), p(151)), outline="#2A2D34", width=w(4))
+            draw.line((p(113), p(131), p(143), p(131)), fill="#2A2D34", width=w(4))
         elif accessory == "square glasses":
-            draw.rounded_rectangle((74, 115, 112, 150), radius=6, outline="#2A2D34", width=4)
-            draw.rounded_rectangle((144, 115, 182, 150), radius=6, outline="#2A2D34", width=4)
-            draw.line((112, 131, 144, 131), fill="#2A2D34", width=4)
+            draw.rounded_rectangle(
+                (p(74), p(115), p(112), p(150)), radius=p(6), outline="#2A2D34", width=w(4)
+            )
+            draw.rounded_rectangle(
+                (p(144), p(115), p(182), p(150)), radius=p(6), outline="#2A2D34", width=w(4)
+            )
+            draw.line((p(112), p(131), p(144), p(131)), fill="#2A2D34", width=w(4))
         elif accessory == "sunglasses":
-            draw.rounded_rectangle((73, 118, 113, 147), radius=10, fill="#211A1D")
-            draw.rounded_rectangle((143, 118, 183, 147), radius=10, fill="#211A1D")
-            draw.line((113, 128, 143, 128), fill="#211A1D", width=4)
+            draw.rounded_rectangle((p(73), p(118), p(113), p(147)), radius=p(10), fill="#211A1D")
+            draw.rounded_rectangle(
+                (p(143), p(118), p(183), p(147)), radius=p(10), fill="#211A1D"
+            )
+            draw.line((p(113), p(128), p(143), p(128)), fill="#211A1D", width=w(4))
         elif accessory == "earrings":
-            draw.ellipse((44, 154, 54, 168), fill="#F4D35E")
-            draw.ellipse((202, 154, 212, 168), fill="#F4D35E")
+            draw.ellipse((p(44), p(154), p(54), p(168)), fill="#F4D35E")
+            draw.ellipse((p(202), p(154), p(212), p(168)), fill="#F4D35E")
         elif accessory == "freckles":
             for x, y in ((105, 151), (113, 154), (143, 154), (151, 151)):
-                draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill="#9A624F")
+                draw.ellipse((p(x - 2), p(y - 2), p(x + 2), p(y + 2)), fill="#9A624F")
 
         image.save(path, format="PNG", optimize=True)
         return {
@@ -377,11 +407,21 @@ class ProceduralAvatarDatasetGenerator:
         with Image.open(path) as original:
             image = original.convert("RGB")
         draw = ImageDraw.Draw(image)
+        cell = max(1, round(16 * (image.width / 256)))
+        row_height = max(1, round(8 * (image.width / 256)))
         for row in range(4):
             for column in range(16):
                 bit = (signature[row * 2 + column // 8] >> (7 - column % 8)) & 1
                 color = "#FFFDF8" if bit else "#211A1D"
-                draw.rectangle((column * 16, row * 8, column * 16 + 15, row * 8 + 7), fill=color)
+                draw.rectangle(
+                    (
+                        column * cell,
+                        row * row_height,
+                        column * cell + cell - 1,
+                        row * row_height + row_height - 1,
+                    ),
+                    fill=color,
+                )
         image.save(path, format="PNG", optimize=True)
 
     @staticmethod

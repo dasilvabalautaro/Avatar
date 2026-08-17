@@ -71,7 +71,20 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--learning-rate", type=float, default=1e-5)
     parser.add_argument("--dataset-dir", type=Path, default=Path("data/training-procedural-v2-1"))
+    parser.add_argument("--resolution", type=int, default=256)
+    parser.add_argument("--lora-rank", type=int, default=16)
+    parser.add_argument("--lora-alpha", type=int, default=16)
+    parser.add_argument("--lora-dropout", type=float, default=0.05)
+    parser.add_argument("--lora-modules", default="to_q,to_k,to_v,to_out.0")
     args = parser.parse_args()
+    if args.resolution < 128 or args.resolution % 32:
+        parser.error("--resolution debe ser >= 128 y múltiplo de 32")
+    lora_config = {
+        "r": args.lora_rank,
+        "lora_alpha": args.lora_alpha,
+        "lora_dropout": args.lora_dropout,
+        "target_modules": [m.strip() for m in args.lora_modules.split(",") if m.strip()],
+    }
     torch.manual_seed(42)
     device = torch.device("cuda")
     dtype = torch.bfloat16
@@ -86,22 +99,19 @@ def main() -> None:
         device=device, dtype=dtype
     )
     prior.requires_grad_(False)
-    prior.add_adapter(
-        LoraConfig(
-            r=16,
-            lora_alpha=16,
-            lora_dropout=0.05,
-            target_modules=["to_q", "to_k", "to_v", "to_out.0"],
-        )
-    )
+    prior.add_adapter(LoraConfig(**lora_config))
+    trainable = sum(p.numel() for p in prior.parameters() if p.requires_grad)
+    if trainable == 0:
+        parser.error("La configuración LoRA no enganchó ningún módulo del prior")
+    print(f"lora_config={lora_config} trainable_params={trainable}", flush=True)
     optimizer = torch.optim.AdamW(
         [p for p in prior.parameters() if p.requires_grad], lr=args.learning_rate
     )
     scheduler = DDPMWuerstchenScheduler()
     image_transform = transforms.Compose(
         [
-            transforms.Resize(256),
-            transforms.CenterCrop(256),
+            transforms.Resize(args.resolution),
+            transforms.CenterCrop(args.resolution),
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ]
@@ -144,6 +154,8 @@ def main() -> None:
         {
             "steps": args.steps,
             "seed": 42,
+            "resolution": args.resolution,
+            "lora_config": lora_config,
             "losses": losses,
             "lora": get_peft_model_state_dict(prior),
         },
