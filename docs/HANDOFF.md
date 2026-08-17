@@ -101,7 +101,11 @@ Completado:
   **destilación progresiva del prior a 256 px** (30→8 pasos en dos etapas,
   maestro = LoRA escala-3), precedida de una línea base sin entrenamiento
   (scheduler reducido a 12 y 8 timesteps); presupuesto de validación fijado
-  (`docs/adr/0008-destilacion-progresiva-prior-256.md`).
+  (`docs/adr/0008-destilacion-progresiva-prior-256.md`);
+- línea base del ADR 0008 ejecutada (2026-08-17): reducir timesteps sin
+  entrenar **no es viable** (12 pasos → 2/8 rostros válidos; 8 pasos → 0/8);
+  la destilación progresiva es obligatoria
+  (`docs/experiments/wuerstchen-baseline-steps-2026-08-17.md`).
 
 En curso:
 
@@ -117,16 +121,12 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar la **línea base sin entrenamiento del ADR 0008**: evaluar el
-> checkpoint de escala-3 con el scheduler del prior reducido a 12 y a 8
-> timesteps, con los ocho prompts fijos. El flag `--prior-timesteps` ya está
-> implementado y publicado en `scripts/validate_wuerstchen_lora.py`
-> (2026-08-17). Falta: (1) el usuario alquila una instancia y se re-entra con
-> `scripts/bootstrap-vast.sh`; (2) dos corridas de evaluación visual
-> (`bash scripts/eval-visual-lora.sh` admite pasar el flag o dos llamadas
-> directas con `--prior-timesteps 12` y `8`); (3) transferencia y verificación
-> SHA-256 como en las escalas 1-4; (4) documento de resultados y comparación
-> contra el maestro a 30 pasos.
+> Diseñar la **destilación progresiva del prior 30→16→8 pasos a 256 px**
+> (maestro = checkpoint de escala-3, guía classifier-free destilada), con
+> documento de diseño previo a pagar la corrida, siguiendo el patrón de
+> `docs/lora-scale-1-design.md`. La línea base del ADR 0008 ya demostró que
+> sin destilar no hay calidad a ≤12 pasos
+> (`docs/experiments/wuerstchen-baseline-steps-2026-08-17.md`).
 
 ## 2. Repositorio y entorno
 
