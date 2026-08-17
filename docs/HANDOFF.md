@@ -121,12 +121,23 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Diseñar la **destilación progresiva del prior 30→16→8 pasos a 256 px**
-> (maestro = checkpoint de escala-3, guía classifier-free destilada), con
-> documento de diseño previo a pagar la corrida, siguiendo el patrón de
-> `docs/lora-scale-1-design.md`. La línea base del ADR 0008 ya demostró que
-> sin destilar no hay calidad a ≤12 pasos
-> (`docs/experiments/wuerstchen-baseline-steps-2026-08-17.md`).
+> Ejecutar la **destilación progresiva del prior** según
+> `docs/distill-prior-design.md` (ya fijado) con
+> `scripts/distill_wuerstchen_prior.py` (implementado y publicado el
+> 2026-08-17, verificado contra la fuente de diffusers 0.39.0). Secuencia:
+> (1) el usuario alquila una instancia (≥ 50 GB de disco) y se re-entra con
+> `scripts/bootstrap-vast.sh` (v2.1.0 por defecto) subiendo además el
+> checkpoint de escala-3; (2) etapa 1:
+> `python scripts/distill_wuerstchen_prior.py --root /workspace/AvatarFace
+> --teacher-checkpoint artifacts/lora-scale-3/pilot-checkpoint.pt --stage 1
+> --student-steps 15 --steps 2000 --output artifacts/distill-stage-1`;
+> (3) evaluación visual de la etapa 1 con
+> `validate_wuerstchen_lora.py --distilled-checkpoint ... --prior-timesteps 15`
+> y los 8 prompts fijos — compuerta: ≥ 6/8 rostros válidos o no se paga la
+> etapa 2; (4) etapa 2 con `--stage 2 --student-steps 8` sobre el checkpoint
+> de la etapa 1 y su evaluación a 8 pasos; (5) respaldo SHA-256, documento de
+> resultados `docs/experiments/wuerstchen-distill-stage-N-*.md` y destrucción
+> de la instancia.
 
 ## 2. Repositorio y entorno
 

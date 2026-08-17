@@ -35,6 +35,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path)
+    parser.add_argument(
+        "--distilled-checkpoint",
+        type=Path,
+        help="checkpoint de destilación: state dict completo del prior (clave 'prior'), sin LoRA; "
+        "combinar con --prior-timesteps igual a los pasos del estudiante (15 u 8)",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--base-only", action="store_true")
     parser.add_argument("--resolution", type=int, default=1024)
@@ -50,7 +56,10 @@ def main() -> None:
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
     parser.add_argument("--negative-prompt", default=DEFAULT_NEGATIVE_PROMPT)
     args = parser.parse_args()
-    if not args.base_only and args.checkpoint is None:
+    if args.distilled_checkpoint is not None:
+        if args.base_only or args.checkpoint is not None:
+            parser.error("--distilled-checkpoint es incompatible con --base-only y --checkpoint")
+    elif not args.base_only and args.checkpoint is None:
         parser.error("--checkpoint es obligatorio salvo cuando se usa --base-only")
     if args.resolution < 256 or args.resolution % 8:
         parser.error("--resolution debe ser >= 256 y múltiplo de 8")
@@ -73,7 +82,12 @@ def main() -> None:
     prior = WuerstchenPrior.from_pretrained(model_root / "prior-base", local_files_only=True).to(
         device=device, dtype=dtype
     )
-    if not args.base_only:
+    if args.distilled_checkpoint is not None:
+        state = torch.load(args.distilled_checkpoint, map_location="cpu", weights_only=True)
+        # Prior completo destilado (sin LoRA); el state dict se guardó en bf16
+        # y load_state_dict lo convierte al dtype del modelo (fp16).
+        prior.load_state_dict(state["prior"], strict=True)
+    elif not args.base_only:
         state = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
         # Los checkpoints nuevos guardan la configuración LoRA con la que se
         # entrenaron; los antiguos (escala 1-3) usan los valores históricos.
