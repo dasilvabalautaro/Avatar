@@ -119,12 +119,14 @@ Próxima tarea exacta:
 
 > Ejecutar la **línea base sin entrenamiento del ADR 0008**: evaluar el
 > checkpoint de escala-3 con el scheduler del prior reducido a 12 y a 8
-> timesteps, con los ocho prompts fijos. Requiere: (1) añadir a
-> `scripts/validate_wuerstchen_lora.py` un flag `--prior-timesteps` (hoy fija
-> `DEFAULT_STAGE_C_TIMESTEPS`); (2) commitear y publicar; (3) el usuario
-> alquila una instancia y se re-entra con `scripts/bootstrap-vast.sh`;
-> (4) dos corridas de evaluación visual (12 y 8 pasos) con transferencia y
-> verificación SHA-256 como en las escalas 1-4.
+> timesteps, con los ocho prompts fijos. El flag `--prior-timesteps` ya está
+> implementado y publicado en `scripts/validate_wuerstchen_lora.py`
+> (2026-08-17). Falta: (1) el usuario alquila una instancia y se re-entra con
+> `scripts/bootstrap-vast.sh`; (2) dos corridas de evaluación visual
+> (`bash scripts/eval-visual-lora.sh` admite pasar el flag o dos llamadas
+> directas con `--prior-timesteps 12` y `8`); (3) transferencia y verificación
+> SHA-256 como en las escalas 1-4; (4) documento de resultados y comparación
+> contra el maestro a 30 pasos.
 
 ## 2. Repositorio y entorno
 
