@@ -97,14 +97,19 @@ Completado:
 - `scripts/bootstrap-vast.sh` acepta el dataset a restaurar como argumentos
   opcionales (por defecto sigue restaurando v2.1.0).
 
+- ADR 0008 aceptado (2026-08-17): la integración móvil del modelo real será
+  **destilación progresiva del prior a 256 px** (30→8 pasos en dos etapas,
+  maestro = LoRA escala-3), precedida de una línea base sin entrenamiento
+  (scheduler reducido a 12 y 8 timesteps); presupuesto de validación fijado
+  (`docs/adr/0008-destilacion-progresiva-prior-256.md`).
+
 En curso:
 
-- Fase 2 — siguiente paso: **integración del modelo real con destilación o
-  reducción de pasos (ADR 0007)**, tras aceptar el techo del piloto LoRA
-  confirmado por escala-4. Requiere un ADR propio antes de cualquier benchmark
-  del modelo real en el dispositivo. Las instancias Vast (escala-3 y escala-4)
-  quedaron encendidas a cargo del usuario (GPU verificada al 0 % en ambas al
-  cerrar las sesiones).
+- Fase 3 — integración del modelo real según ADR 0008. No hay instancias Vast
+  activas (el usuario las apagó todas el 2026-08-17); cualquier paso en GPU
+  requiere alquilar una nueva y re-entrar con `scripts/bootstrap-vast.sh`
+  (dataset por defecto v2.1.0; para 512 px pasar `training-procedural-v2-2`
+  y `dataset-2.2.0.lock.json`).
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -112,11 +117,14 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Redactar el ADR de destilación/reducción de pasos que exige ADR 0007 antes
-> de cualquier benchmark del modelo real en el dispositivo. El ciclo de
-> escalado LoRA quedó cerrado con escala-4 (techo del modelo base confirmado
-> para rasgos finos). Referencias: `docs/experiments/wuerstchen-lora-scale-4-2026-08-17.md`,
-> ADR 0007 y el baseline Android de la sección 4.
+> Ejecutar la **línea base sin entrenamiento del ADR 0008**: evaluar el
+> checkpoint de escala-3 con el scheduler del prior reducido a 12 y a 8
+> timesteps, con los ocho prompts fijos. Requiere: (1) añadir a
+> `scripts/validate_wuerstchen_lora.py` un flag `--prior-timesteps` (hoy fija
+> `DEFAULT_STAGE_C_TIMESTEPS`); (2) commitear y publicar; (3) el usuario
+> alquila una instancia y se re-entra con `scripts/bootstrap-vast.sh`;
+> (4) dos corridas de evaluación visual (12 y 8 pasos) con transferencia y
+> verificación SHA-256 como en las escalas 1-4.
 
 ## 2. Repositorio y entorno
 
