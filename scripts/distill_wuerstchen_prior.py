@@ -28,9 +28,10 @@ Matemática por paso (schedulers/scheduling_ddpm_wuerstchen.py):
   correcta del scheduler cuando no hay imágenes.
 - Guía (pipeline_wuerstchen_prior.py): eps = lerp(eps_incond, eps_cond, w)
   = eps_incond + w·(eps_cond − eps_incond), con incond = caption vacío.
-- Pérdida: MSE en fp32 con peso SNR w(t) = ab(t)/(1−ab(t)), normalizado a
-  media 1 sobre los saltos de la rejilla para no alterar la escala del
-  gradiente (el scheduler no trae pesos SNR incorporados).
+- Pérdida: MSE en fp32 con **peso uniforme** por salto. La ponderación SNR
+  inicial (w = ab/(1-ab)) dejaba sin gradiente los saltos de alto ruido y la
+  etapa 1 falló la compuerta; ver
+  docs/experiments/wuerstchen-distill-stage-1-2026-08-18.md.
 """
 
 from __future__ import annotations
@@ -81,10 +82,7 @@ def jump_coefficients(
         alpha = ab_t / ab_next
         a = alpha.rsqrt()  # sqrt(ab(t'')/ab(t))
         b = a * (1 - alpha) / (1 - ab_t).sqrt()
-        snr = ab_t / (1 - ab_t)
-        jumps.append((float(t), float(a), float(b), float(snr)))
-    mean_snr = sum(j[3] for j in jumps) / len(jumps)
-    jumps = [(t, a, b, snr / mean_snr) for t, a, b, snr in jumps]
+        jumps.append((float(t), float(a), float(b), 1.0))
     coeffs_a = torch.tensor([j[1] for j in jumps], dtype=torch.float32, device=device)
     coeffs_b = torch.tensor([j[2] for j in jumps], dtype=torch.float32, device=device)
     weights = torch.tensor([j[3] for j in jumps], dtype=torch.float32, device=device)
