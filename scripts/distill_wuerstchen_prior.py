@@ -23,9 +23,16 @@ Matemática por paso (schedulers/scheduling_ddpm_wuerstchen.py):
   salto único: eps_obj = (a·x_t − x'') / b, con a = sqrt(ab(t'')/ab(t)) y
   b = a·(1 − ab(t)/ab(t'')) / sqrt(1 − ab(t)). El ruido estocástico de los
   pasos del maestro queda absorbido en ese epsilon efectivo.
-- x_t se muestrea como N(0, I): equivale a add_noise con x0 ~ N(0, I), pues
+- En modo `--mode marginal` (etapas 1 a 1c, hoy descartado), x_t se muestrea
+  como N(0, I): equivale a add_noise con x0 ~ N(0, I), pues
   sqrt(ab)·z + sqrt(1−ab)·eps es N(0, I) para cualquier t. Es la marginal
-  correcta del scheduler cuando no hay imágenes.
+  correcta del scheduler cuando no hay imágenes, pero el estudiante nunca ve
+  los estados intermedios reales que recibirá en inferencia.
+- En modo `--mode trajectory` (ADR 0009, docs/distill-trajectory-design.md) el
+  maestro primero ejecuta su trayectoria guiada completa para cada caption de
+  train y se almacenan los latentes de todos los puntos de la rejilla junto
+  con los embeddings de texto; el entrenamiento usa los latentes reales
+  x(2k) → x(2k+2) como entrada y objetivo, sin más forwards del maestro.
 - Guía (pipeline_wuerstchen_prior.py): eps = lerp(eps_incond, eps_cond, w)
   = eps_incond + w·(eps_cond − eps_incond), con incond = caption vacío.
 - Pérdida: MSE en fp32 con **peso uniforme** por salto. La ponderación SNR
@@ -124,6 +131,47 @@ def guided_epsilon(
     return torch.lerp(eps_uncond, eps_cond, guidance_scale)
 
 
+def generate_trajectories(
+    teacher: torch.nn.Module,
+    text_model: torch.nn.Module,
+    tokenizer: object,
+    captions: list[str],
+    grid: list[float],
+    scheduler: DDPMWuerstchenScheduler,
+    uncond: torch.Tensor,
+    guidance_scale: float,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Trayectorias reales del maestro: latentes en cada punto de la rejilla.
+
+    Devuelve (trayectorias, condiciones): un tensor
+    [n_captions, len(grid), 16, 8, 8] con el latente real del maestro en cada
+    punto de su rejilla, y un tensor [n_captions, seq, hidden] con los
+    embeddings de texto cacheados. El entrenamiento consume ambos sin volver a
+    ejecutar el maestro ni el encoder de texto.
+    """
+    conditions: list[torch.Tensor] = []
+    trajectories = torch.empty(
+        len(captions), len(grid), *LATENT_SHAPE[1:], dtype=dtype, device=device
+    )
+    with torch.no_grad():
+        for i, caption in enumerate(captions):
+            cond = encode_captions(text_model, tokenizer, [caption], device)
+            conditions.append(cond[0])
+            x = torch.randn(LATENT_SHAPE, device=device, dtype=dtype)
+            for j, t in enumerate(grid):
+                trajectories[i, j] = x[0]
+                if j + 1 == len(grid):
+                    break
+                ratio = torch.full((1,), t, device=device, dtype=dtype)
+                eps = guided_epsilon(teacher, x, ratio, cond, uncond, guidance_scale)
+                x = scheduler.step(eps, ratio, x).prev_sample
+            if (i + 1) % 50 == 0 or i + 1 == len(captions):
+                print(f"trajectories={i + 1}/{len(captions)}", flush=True)
+    return trajectories, torch.stack(conditions)
+
+
 def load_prior(model_root: Path, device: torch.device, dtype: torch.dtype) -> WuerstchenPrior:
     return WuerstchenPrior.from_pretrained(model_root / "prior-base", local_files_only=True).to(
         device=device, dtype=dtype
@@ -140,6 +188,13 @@ def main() -> None:
     )
     parser.add_argument("--steps", type=int, default=2000)
     parser.add_argument("--learning-rate", type=float, default=1e-5)
+    parser.add_argument(
+        "--mode",
+        choices=("marginal", "trajectory"),
+        default="marginal",
+        help="marginal: x_t ~ N(0, I) (etapas 1-1c, descartado); trajectory: latentes "
+        "reales de la trayectoria del maestro (ADR 0009)",
+    )
     parser.add_argument(
         "--normalize-target",
         action="store_true",
@@ -203,20 +258,47 @@ def main() -> None:
     scheduler.set_timesteps(timesteps=grid, device=device)
     optimizer = torch.optim.AdamW(student.parameters(), lr=args.learning_rate)
 
+    trajectories: torch.Tensor | None = None
+    conditions: torch.Tensor | None = None
+    if args.mode == "trajectory":
+        trajectories, conditions = generate_trajectories(
+            teacher,
+            text_model,
+            tokenizer,
+            [record["caption"] for record in train],
+            grid,
+            scheduler,
+            uncond,
+            args.guidance_scale,
+            device,
+            teacher_dtype,
+        )
+        # El maestro ya no participa en el entrenamiento: se libera VRAM.
+        del teacher
+        torch.cuda.empty_cache()
+
     losses: list[float] = []
     for step in range(args.steps):
-        record = train[step % len(train)]
-        cond = encode_captions(text_model, tokenizer, [record["caption"]], device)
+        index = step % len(train)
         k = int(torch.randint(len(jumps), (1,)).item())
-        t, t_mid = grid[2 * k], grid[2 * k + 1]
-        x_t = torch.randn(LATENT_SHAPE, device=device, dtype=teacher_dtype)
-        ratio = torch.full((1,), t, device=device, dtype=teacher_dtype)
-        ratio_mid = torch.full((1,), t_mid, device=device, dtype=teacher_dtype)
-        with torch.no_grad():
-            eps1 = guided_epsilon(teacher, x_t, ratio, cond, uncond, args.guidance_scale)
-            x_mid = scheduler.step(eps1, ratio, x_t).prev_sample
-            eps2 = guided_epsilon(teacher, x_mid, ratio_mid, cond, uncond, args.guidance_scale)
-            x_next = scheduler.step(eps2, ratio_mid, x_mid).prev_sample
+        t = grid[2 * k]
+        if trajectories is None or conditions is None:
+            record = train[index]
+            cond = encode_captions(text_model, tokenizer, [record["caption"]], device)
+            t_mid = grid[2 * k + 1]
+            x_t = torch.randn(LATENT_SHAPE, device=device, dtype=teacher_dtype)
+            ratio = torch.full((1,), t, device=device, dtype=teacher_dtype)
+            ratio_mid = torch.full((1,), t_mid, device=device, dtype=teacher_dtype)
+            with torch.no_grad():
+                eps1 = guided_epsilon(teacher, x_t, ratio, cond, uncond, args.guidance_scale)
+                x_mid = scheduler.step(eps1, ratio, x_t).prev_sample
+                eps2 = guided_epsilon(teacher, x_mid, ratio_mid, cond, uncond, args.guidance_scale)
+                x_next = scheduler.step(eps2, ratio_mid, x_mid).prev_sample
+        else:
+            # Entrada y objetivo reales de la trayectoria del maestro (ADR 0009).
+            cond = conditions[index].unsqueeze(0)
+            x_t = trajectories[index, 2 * k].unsqueeze(0)
+            x_next = trajectories[index, 2 * k + 2].unsqueeze(0)
         # Epsilon efectivo del salto t → t'' despejado de los coeficientes.
         target = (coeffs_a[k] * x_t.float() - x_next.float()) / coeffs_b[k]
         ratio_student = torch.full((1,), t, device=device, dtype=torch.float32)
@@ -249,6 +331,7 @@ def main() -> None:
                 "teacher_steps": len(grid),
                 "normalize_target": args.normalize_target,
                 "learning_rate": args.learning_rate,
+                "mode": args.mode,
             },
             "losses": losses,
             "prior": {

@@ -122,16 +122,27 @@ Completado:
   cada salto. Agotadas las correcciones baratas del objetivo, la vía de
   destilación progresiva queda **descartada** salvo reformulación del método
   (`docs/experiments/wuerstchen-distill-stage-1c-2026-08-18.md`).
+- decisión del usuario registrada en **ADR 0009** (2026-08-18): la integración
+  móvil sigue por **destilación sobre trayectorias reales del maestro**
+  (opción (a); (b) queda como cuantización posterior del artefacto y (c)
+  descartada mientras quede vía offline). Diseño fijado en
+  `docs/distill-trajectory-design.md` y `scripts/distill_wuerstchen_prior.py`
+  extendido con `--mode trajectory` (genera las trayectorias guiadas del
+  maestro una vez por caption, cachea los embeddings de texto y entrena sin
+  maestro); `--mode marginal` se conserva para reproducibilidad histórica;
+- aclaración de alcance del usuario (2026-08-18): el TECNO KM5s es sólo el
+  dispositivo de referencia para pruebas; el producto debe funcionar en
+  **Android API 31 a 36** (cubierto por minSdk 26 y ONNX Runtime 1.23.2).
 
 En curso:
 
-- Fase 3 — integración del modelo real según ADR 0008. La destilación
-  progresiva quedó **descartada** tras tres fallos de compuerta en la etapa 1
-  (SNR, uniforme, normalizado; 2026-08-18). La integración móvil requiere un
-  replanteo con ADR nuevo. No hay instancias Vast activas; cualquier paso en
-  GPU requiere alquilar una nueva y re-entrar con
-  `scripts/bootstrap-vast.sh` (dataset por defecto v2.1.0; para 512 px pasar
-  `training-procedural-v2-2` y `dataset-2.2.0.lock.json`).
+- Fase 3 — integración del modelo real. La destilación sobre la marginal
+  N(0, I) quedó descartada tras tres fallos de compuerta en la etapa 1 (SNR,
+  uniforme, normalizado; 2026-08-18); la vía vigente es la destilación sobre
+  trayectorias reales (ADR 0009, `docs/distill-trajectory-design.md`). No hay
+  instancias Vast activas; la etapa 1d requiere alquilar una nueva y re-entrar
+  con `scripts/bootstrap-vast.sh` (el dataset por defecto v2.1.0 es el
+  correcto para esta corrida).
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -139,14 +150,30 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> La destilación progresiva quedó **descartada** (tres fallos de compuerta en
-> la etapa 1, 2026-08-18; ver `docs/experiments/wuerstchen-distill-stage-1c-2026-08-18.md`).
-> La próxima acción es una **decisión del usuario** sobre la integración
-> móvil, a registrar en un ADR nuevo. Opciones: (a) reformular la destilación
-> (trayectorias reales del maestro en lugar de la marginal N(0, I)); (b)
-> cuantización agresiva del prior sin reducir pasos; (c) aceptar el modelo en
-> GPU/servidor y replantear el alcance offline. No pagar GPU hasta tener esa
-> decisión.
+> Ejecutar la **destilación etapa 1d** (30→15 pasos sobre trayectorias reales;
+> ADR 0009 y `docs/distill-trajectory-design.md`):
+> 1. Alquilar RTX 4090 en Vast y re-entrar: scp de
+>    `transfer/avatarface-training-procedural-v2-1.tar`,
+>    `transfer/avatarface-smoke-procedural.tar` y `transfer/SHA256SUMS` a
+>    `/tmp/avatarface-transfer/`, luego `bash scripts/bootstrap-vast.sh`
+>    (restaura v2.1.0 por defecto).
+> 2. Subir el maestro: scp de `artifacts/lora-scale-3/pilot-checkpoint.pt`
+>    (12 MB; SHA-256 `fbc61da9...` reverificado en local el 2026-08-18).
+> 3. Entrenar:
+>    `python scripts/distill_wuerstchen_prior.py --root . \
+>      --teacher-checkpoint artifacts/lora-scale-3/pilot-checkpoint.pt \
+>      --stage 1 --student-steps 15 --mode trajectory --normalize-target \
+>      --steps 6000 --learning-rate 5e-5 --output artifacts/distill-stage-1d`
+> 4. Validar con los 8 prompts fijos:
+>    `bash scripts/eval-visual-lora.sh --distilled \
+>      artifacts/distill-stage-1d/pilot-checkpoint.pt \
+>      artifacts/distill-stage-1d/eval "--prior-timesteps 15" --skip-base`
+>    (1024 px por defecto, igual que 1-1c; los base-only de escala-3 ya
+>    existen).
+> 5. Compuerta: ≥ 6/8 rostros válidos antes de pagar la etapa 2 (15→8, mismo
+>    modo, maestro = checkpoint de 1d). Documentar en
+>    `docs/experiments/wuerstchen-distill-stage-1d-AAAA-MM-DD.md`, respaldo
+>    local con SHA-256 y destruir la instancia (GPU al 0 %).
 
 ## 2. Repositorio y entorno
 

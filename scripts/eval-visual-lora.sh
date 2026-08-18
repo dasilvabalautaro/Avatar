@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Evaluación visual congelada de un checkpoint LoRA (conjunto de escala-1).
+# Evaluación visual congelada de un checkpoint LoRA o destilado (conjunto de
+# escala-1).
 #
 # Genera los 8 prompts fijados en docs/lora-scale-1-design.md con el
 # checkpoint indicado y con --base-only (misma seed 42), usando la receta
@@ -8,14 +9,22 @@
 # corridas sólo son válidas con este mismo conjunto.
 #
 # Uso en la instancia, desde la raíz del repo:
-#   bash scripts/eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA \
-#     [ARGS_EXTRA_VALIDADOR] [--skip-base]
+#   bash scripts/eval-visual-lora.sh [--distilled] CHECKPOINT.pt \
+#     DIRECTORIO_SALIDA [ARGS_EXTRA_VALIDADOR] [--skip-base]
 # Ejemplo (línea base del ADR 0008, sin repetir los base-only de escala-3):
 #   bash scripts/eval-visual-lora.sh ckpt.pt out "--prior-timesteps 12" --skip-base
+# Ejemplo (etapa de destilación, ADR 0009):
+#   bash scripts/eval-visual-lora.sh --distilled ckpt.pt out \
+#     "--prior-timesteps 15" --skip-base
 set -euo pipefail
 
-checkpoint=${1:?Uso: eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA [ARGS_EXTRA] [--skip-base]}
-output=${2:?Uso: eval-visual-lora.sh CHECKPOINT.pt DIRECTORIO_SALIDA [ARGS_EXTRA] [--skip-base]}
+mode=--checkpoint
+if [[ "${1:-}" == "--distilled" ]]; then
+  mode=--distilled-checkpoint
+  shift
+fi
+checkpoint=${1:?Uso: eval-visual-lora.sh [--distilled] CHECKPOINT.pt DIRECTORIO_SALIDA [ARGS_EXTRA] [--skip-base]}
+output=${2:?Uso: eval-visual-lora.sh [--distilled] CHECKPOINT.pt DIRECTORIO_SALIDA [ARGS_EXTRA] [--skip-base]}
 extra=${3:-}
 skip_base=${4:-}
 root=$(pwd)
@@ -44,7 +53,7 @@ for i in "${!prompts[@]}"; do
   echo "=== lora $n ==="
   # shellcheck disable=SC2086
   python scripts/validate_wuerstchen_lora.py \
-    --root "$root" --checkpoint "$checkpoint" \
+    --root "$root" "$mode" "$checkpoint" \
     --prompt "${prompts[$i]}" $extra \
     --output "$output/lora-$n.png"
 done
