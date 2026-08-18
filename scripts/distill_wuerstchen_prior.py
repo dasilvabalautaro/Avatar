@@ -32,6 +32,11 @@ Matemática por paso (schedulers/scheduling_ddpm_wuerstchen.py):
   inicial (w = ab/(1-ab)) dejaba sin gradiente los saltos de alto ruido y la
   etapa 1 falló la compuerta; ver
   docs/experiments/wuerstchen-distill-stage-1-2026-08-18.md.
+  Con `--normalize-target`, la pérdida de cada muestra se divide por la
+  potencia media del epsilon objetivo (mse/‖eps‖²): todos los saltos pesan
+  igual aunque la magnitud de su epsilon difiera en órdenes de magnitud
+  (diagnóstico de la etapa 1b,
+  docs/experiments/wuerstchen-distill-stage-1b-2026-08-18.md).
 """
 
 from __future__ import annotations
@@ -135,6 +140,11 @@ def main() -> None:
     )
     parser.add_argument("--steps", type=int, default=2000)
     parser.add_argument("--learning-rate", type=float, default=1e-5)
+    parser.add_argument(
+        "--normalize-target",
+        action="store_true",
+        help="divide la pérdida de cada muestra por la potencia media del epsilon objetivo",
+    )
     parser.add_argument("--guidance-scale", type=float, default=8.0)
     parser.add_argument("--dataset-dir", type=Path, default=Path("data/training-procedural-v2-1"))
     parser.add_argument("--output", type=Path, required=True)
@@ -212,6 +222,8 @@ def main() -> None:
         ratio_student = torch.full((1,), t, device=device, dtype=torch.float32)
         prediction = student(x_t.float(), ratio_student, cond.float())
         loss = torch.nn.functional.mse_loss(prediction.float(), target) * weights[k]
+        if args.normalize_target:
+            loss = loss / target.pow(2).mean().clamp_min(1e-8)
         if not torch.isfinite(loss.detach()).all():
             raise RuntimeError(
                 f"Pérdida no finita en el paso {step + 1} (k={k}, t={t}): "
@@ -235,6 +247,8 @@ def main() -> None:
                 "student_steps": args.student_steps,
                 "guidance_scale": args.guidance_scale,
                 "teacher_steps": len(grid),
+                "normalize_target": args.normalize_target,
+                "learning_rate": args.learning_rate,
             },
             "losses": losses,
             "prior": {
