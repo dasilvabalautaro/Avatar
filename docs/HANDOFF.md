@@ -113,18 +113,23 @@ Completado:
   2026-08-18: **compuerta no superada (1/8)**; la señal de gradiente quedó
   restaurada (sin pérdidas casi nulas) y la muestra 03 es un rostro válido,
   pero 2000 pasos con `lr=1e-5` no bastan para aprender los 14 saltos con la
-  precisión que exigen los rasgos. Conforme al diseño **no se paga la
-  etapa 2**; opciones futuras documentadas (más pasos/lr, normalización del
-  objetivo por salto, trayectorias consistentes) en
-  `docs/experiments/wuerstchen-distill-stage-1b-2026-08-18.md`.
+  precisión que exigen los rasgos
+  (`docs/experiments/wuerstchen-distill-stage-1b-2026-08-18.md`);
+- destilación etapa 1c (30→15 pasos, **objetivo normalizado** mse/‖eps‖²,
+  `lr=5e-5`, 6000 pasos) ejecutada el 2026-08-18: **compuerta no superada
+  (0/8)**; las 8 muestras contienen rostros con rasgos completos (1b lograba
+  1/8) pero siempre **repetidos en mosaico** — el estudiante sobre-actúa en
+  cada salto. Agotadas las correcciones baratas del objetivo, la vía de
+  destilación progresiva queda **descartada** salvo reformulación del método
+  (`docs/experiments/wuerstchen-distill-stage-1c-2026-08-18.md`).
 
 En curso:
 
 - Fase 3 — integración del modelo real según ADR 0008. La destilación
-  progresiva quedó **en pausa** tras dos fallos de compuerta en la etapa 1
-  (2026-08-18); retomarla exige una decisión del usuario sobre la formulación
-  del objetivo (ver el documento de la etapa 1b). No hay instancias Vast
-  activas; cualquier paso en GPU requiere alquilar una nueva y re-entrar con
+  progresiva quedó **descartada** tras tres fallos de compuerta en la etapa 1
+  (SNR, uniforme, normalizado; 2026-08-18). La integración móvil requiere un
+  replanteo con ADR nuevo. No hay instancias Vast activas; cualquier paso en
+  GPU requiere alquilar una nueva y re-entrar con
   `scripts/bootstrap-vast.sh` (dataset por defecto v2.1.0; para 512 px pasar
   `training-procedural-v2-2` y `dataset-2.2.0.lock.json`).
 
@@ -134,13 +139,13 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> La destilación progresiva quedó **en pausa** (dos fallos de compuerta en la
-> etapa 1, 2026-08-18). La próxima acción es una **decisión del usuario**:
-> (a) iterar la etapa 1 con una de las correcciones documentadas en
-> `docs/experiments/wuerstchen-distill-stage-1b-2026-08-18.md` (más
-> pasos/`lr`, normalización del objetivo por salto o trayectorias
-> consistentes), alquilando GPU nueva; o (b) cerrar la vía de destilación y
-> replantear la integración móvil (ADR nuevo). No pagar GPU hasta tener esa
+> La destilación progresiva quedó **descartada** (tres fallos de compuerta en
+> la etapa 1, 2026-08-18; ver `docs/experiments/wuerstchen-distill-stage-1c-2026-08-18.md`).
+> La próxima acción es una **decisión del usuario** sobre la integración
+> móvil, a registrar en un ADR nuevo. Opciones: (a) reformular la destilación
+> (trayectorias reales del maestro en lugar de la marginal N(0, I)); (b)
+> cuantización agresiva del prior sin reducir pasos; (c) aceptar el modelo en
+> GPU/servidor y replantear el alcance offline. No pagar GPU hasta tener esa
 > decisión.
 
 ## 2. Repositorio y entorno
