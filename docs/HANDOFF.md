@@ -1,6 +1,6 @@
 # Handoff de AvatarFace
 
-Actualizado: 2026-08-17, zona horaria `America/La_Paz`.
+Actualizado: 2026-08-18, zona horaria `America/La_Paz`.
 
 Este documento es el punto de entrada obligatorio para retomar el proyecto en
 otra sesión. El estado descrito corresponde al commit que contiene este archivo;
@@ -105,15 +105,28 @@ Completado:
 - línea base del ADR 0008 ejecutada (2026-08-17): reducir timesteps sin
   entrenar **no es viable** (12 pasos → 2/8 rostros válidos; 8 pasos → 0/8);
   la destilación progresiva es obligatoria
-  (`docs/experiments/wuerstchen-baseline-steps-2026-08-17.md`).
+  (`docs/experiments/wuerstchen-baseline-steps-2026-08-17.md`);
+- destilación etapa 1 (30→15 pasos, peso SNR) ejecutada el 2026-08-18:
+  **compuerta no superada (0/8)**; el peso SNR anulaba el gradiente en saltos
+  de alto ruido (`docs/experiments/wuerstchen-distill-stage-1-2026-08-18.md`);
+- destilación etapa 1b (30→15 pasos, **peso uniforme**) ejecutada el
+  2026-08-18: **compuerta no superada (1/8)**; la señal de gradiente quedó
+  restaurada (sin pérdidas casi nulas) y la muestra 03 es un rostro válido,
+  pero 2000 pasos con `lr=1e-5` no bastan para aprender los 14 saltos con la
+  precisión que exigen los rasgos. Conforme al diseño **no se paga la
+  etapa 2**; opciones futuras documentadas (más pasos/lr, normalización del
+  objetivo por salto, trayectorias consistentes) en
+  `docs/experiments/wuerstchen-distill-stage-1b-2026-08-18.md`.
 
 En curso:
 
-- Fase 3 — integración del modelo real según ADR 0008. No hay instancias Vast
-  activas (el usuario las apagó todas el 2026-08-17); cualquier paso en GPU
-  requiere alquilar una nueva y re-entrar con `scripts/bootstrap-vast.sh`
-  (dataset por defecto v2.1.0; para 512 px pasar `training-procedural-v2-2`
-  y `dataset-2.2.0.lock.json`).
+- Fase 3 — integración del modelo real según ADR 0008. La destilación
+  progresiva quedó **en pausa** tras dos fallos de compuerta en la etapa 1
+  (2026-08-18); retomarla exige una decisión del usuario sobre la formulación
+  del objetivo (ver el documento de la etapa 1b). No hay instancias Vast
+  activas; cualquier paso en GPU requiere alquilar una nueva y re-entrar con
+  `scripts/bootstrap-vast.sh` (dataset por defecto v2.1.0; para 512 px pasar
+  `training-procedural-v2-2` y `dataset-2.2.0.lock.json`).
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -121,23 +134,14 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar la **destilación progresiva del prior** según
-> `docs/distill-prior-design.md` (ya fijado) con
-> `scripts/distill_wuerstchen_prior.py` (implementado y publicado el
-> 2026-08-17, verificado contra la fuente de diffusers 0.39.0). Secuencia:
-> (1) el usuario alquila una instancia (≥ 50 GB de disco) y se re-entra con
-> `scripts/bootstrap-vast.sh` (v2.1.0 por defecto) subiendo además el
-> checkpoint de escala-3; (2) etapa 1:
-> `python scripts/distill_wuerstchen_prior.py --root /workspace/AvatarFace
-> --teacher-checkpoint artifacts/lora-scale-3/pilot-checkpoint.pt --stage 1
-> --student-steps 15 --steps 2000 --output artifacts/distill-stage-1`;
-> (3) evaluación visual de la etapa 1 con
-> `validate_wuerstchen_lora.py --distilled-checkpoint ... --prior-timesteps 15`
-> y los 8 prompts fijos — compuerta: ≥ 6/8 rostros válidos o no se paga la
-> etapa 2; (4) etapa 2 con `--stage 2 --student-steps 8` sobre el checkpoint
-> de la etapa 1 y su evaluación a 8 pasos; (5) respaldo SHA-256, documento de
-> resultados `docs/experiments/wuerstchen-distill-stage-N-*.md` y destrucción
-> de la instancia.
+> La destilación progresiva quedó **en pausa** (dos fallos de compuerta en la
+> etapa 1, 2026-08-18). La próxima acción es una **decisión del usuario**:
+> (a) iterar la etapa 1 con una de las correcciones documentadas en
+> `docs/experiments/wuerstchen-distill-stage-1b-2026-08-18.md` (más
+> pasos/`lr`, normalización del objetivo por salto o trayectorias
+> consistentes), alquilando GPU nueva; o (b) cerrar la vía de destilación y
+> replantear la integración móvil (ADR nuevo). No pagar GPU hasta tener esa
+> decisión.
 
 ## 2. Repositorio y entorno
 
