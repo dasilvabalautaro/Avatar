@@ -160,10 +160,25 @@ Completado:
   muestras de control); bucle de entrenamiento e inferencia verificado en
   smoke CPU local.
 
+- etapa E2 del ADR 0010 completada (2026-08-19): release
+  `avatarface-distill-teacher` v1.0.0 generada por el maestro (LoRA escala-3,
+  receta oficial) en una RTX 4090 — 4096 muestras a 256 px, auditoría con
+  4096 hashes únicos y cero hallazgos, lock congelado, manifiesto SHA-256
+  `05f36cb10f99efbbc4e34bcf36fa3274a8dcb0c9c348f3ed3fd6682df9300a26`,
+  paquete `transfer/avatarface-distill-teacher-v1.tar` (154,613,760 bytes,
+  SHA-256 `ed0fc1d87e6e6f9f2c2919fa2266428ed3b5461e1d28b826d9d555196a5c0a1b`)
+  bajado directo y verificado en local (~2 s por muestra; costo ~1–2 USD)
+  (`docs/experiments/distill-teacher-dataset-2026-08-19.md`).
+
 En curso:
 
-- Fase 3 — vía del ADR 0010, etapa E2 pendiente: generar el dataset de
-  destilación en GPU. No hay instancias Vast activas.
+- Fase 3 — etapa E3 del ADR 0010 **corriendo en la instancia Vast**
+  (2026-08-19): `scripts/train_student.py --formulation direct
+  --batch-size 16` (batch 32 fp32 excede VRAM; con 16 usa 40.4 GiB), 50,000
+  pasos, lr 1e-4, sobre la release v1.0.0; checkpoint reanudable y muestras
+  de control cada 5,000 pasos en `artifacts/student-direct-1/`, log en
+  `/workspace/student-direct-1.log`. **La instancia debe seguir encendida
+  hasta que termine.**
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -171,16 +186,15 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar la etapa **E2** de `docs/student-distill-design.md`: alquilar una
-> RTX 4090 en Vast, correr `scripts/bootstrap-vast.sh`, restaurar el
-> checkpoint LoRA escala-3 por el flujo verificado, generar los captions con
-> `avatar-face generate-distill-captions` en la instancia y lanzar
-> `scripts/generate_distill_dataset.py` (reanudable; ~6–10 s por muestra,
-> 4096 muestras ≈ 9–15 h). Al terminar: `audit-dataset`, `freeze-dataset`,
-> traer manifiesto+lock+imágenes por el flujo de `transfer/` y registrar el
-> experimento en `docs/experiments/`. Después E3: `scripts/train_student.py
-> --formulation direct` (50k pasos) y compuerta visual ≥ 6/8 sobre las
-> muestras de control. Presupuesto y compuertas en el ADR 0010.
+> Esperar el fin de la etapa **E3** (entrenamiento del estudiante, formulación
+> `direct`, en curso en la instancia Vast; ~1 s/paso → ~14 h). Al terminar:
+> bajar `artifacts/student-direct-1/` (checkpoint + muestras de control),
+> evaluar la **compuerta visual ≥ 6/8** con las muestras de control del paso
+> final (8 casos de validation, todas de adultos), registrar el experimento
+> en `docs/experiments/` y decidir según el ADR 0010: si pasa → E5
+> (exportación ONNX + INT8 + benchmark en el TECNO); si falla → una única
+> iteración de la formulación `diffusion` (E4). Sólo destruir la instancia
+> tras traer los artefactos con valor.
 
 ## 2. Repositorio y entorno
 
