@@ -180,8 +180,10 @@ Comandos CLI disponibles (todos emiten resultados explícitos, la mayoría JSON)
   `downloads/`, `artifacts/` (salvo `.gitkeep`), `transfer/*.tar` y sus
   checksums, builds Android, APK/AAB, `.env`.
 - Todo ADB debe usar el serial explícito del dispositivo (`-s`).
-- Flujo Vast.ai obligatorio: máquina local → `.tar` + SHA256SUMS → (Drive si
-  >100 MB) → restauración verificada por hash; los scripts en `scripts/`
+- Flujo Vast.ai obligatorio en subidas: máquina local → `.tar` + SHA256SUMS →
+  (Drive si >200 MB) → restauración verificada por hash; las bajadas
+  Vast → local son directas sin límite de tamaño, verificadas por
+  SHA256SUMS; los scripts en `scripts/`
   (`package-for-drive.sh`, `restore-from-drive.sh`, `preflight-vast.sh`)
   rechazan rutas inseguras y no suben ni transfieren automáticamente.
   Excepción (2026-08-15): los pesos públicos de HuggingFace fijados por

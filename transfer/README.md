@@ -6,12 +6,16 @@ los enlaces/IDs de Drive y cualquier secreto no se escriben aquí.
 
 ## Regla de transporte
 
-El umbral es **100 MB = 100,000,000 bytes** del archivo `.tar` final:
+La regla aplica a las **subidas** (máquina local → Vast.ai) y el umbral es
+**200 MB = 200,000,000 bytes** del archivo `.tar` final (aclaración del
+usuario, 2026-08-19):
 
-- Si el `.tar` supera 100 MB, se sube a Google Drive y Vast.ai lo descarga desde
-  allí.
-- Si mide 100 MB o menos, se transfiere directamente desde esta máquina local a
-  Vast.ai.
+- Si el `.tar` supera 200 MB, se sube a Google Drive y Vast.ai lo descarga
+  desde allí.
+- Si mide 200 MB o menos, se transfiere directamente desde esta máquina local
+  a Vast.ai.
+- Las **bajadas** (Vast.ai → máquina local) no tienen límite de tamaño y se
+  hacen directas, siempre con su `SHA256SUMS` verificado tras la descarga.
 
 Siempre se transfiere también el `SHA256SUMS` correspondiente y se verifica el
 hash antes de extraer. Para pesos, se incluye `model-manifest.json` con la

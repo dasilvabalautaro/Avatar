@@ -30,10 +30,10 @@ tar -tf "$package" >/dev/null
 (cd "$output_dir" && shasum -a 256 "$(basename "$package")") >> "$sums"
 
 package_bytes=$(stat -f '%z' "$package" 2>/dev/null || stat -c '%s' "$package")
-if (( package_bytes > 100000000 )); then
-  route="Drive → Vast.ai (supera 100 MB)"
+if (( package_bytes > 200000000 )); then
+  route="Drive → Vast.ai (supera 200 MB)"
 else
-  route="máquina local → Vast.ai (hasta 100 MB)"
+  route="máquina local → Vast.ai (hasta 200 MB)"
 fi
 
 echo "Paquete creado: $package"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prepara una instancia Vast NUEVA para el entrenamiento LoRA (escala sobre v2.x).
 #
-# Requisitos previos (ruta directa, ambos < 100 MB), desde la máquina local:
+# Requisitos previos (ruta directa, ambos < 200 MB), desde la máquina local:
 #   scp -P PUERTO transfer/avatarface-training-procedural-v2-2.tar \
 #       transfer/avatarface-smoke-procedural.tar transfer/SHA256SUMS \
 #       root@IP:/tmp/avatarface-transfer/
