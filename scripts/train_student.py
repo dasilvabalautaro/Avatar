@@ -6,8 +6,16 @@ Formulaciones (`--formulation`):
   maestro con pérdida L1 e inferencia en 1 paso. Cada caption del dataset es
   único, así que el mapeo es determinista por atributos; el ruido de entrada
   queda como entrada de compatibilidad y el modelo aprende a ignorarlo.
-- `diffusion` (respaldo, una sola iteración): el mismo U-Net como predictor de
-  epsilon con schedule coseno; muestreo DDIM de 8 pasos.
+- `diffusion` (respaldo): el mismo U-Net como predictor de epsilon con schedule
+  coseno; muestreo DDIM de 8 pasos. **Descartada el 2026-08-19**: a ruido alto
+  la predicción óptima de epsilon es la propia entrada ruidosa, así que el
+  objetivo no da gradiente para usar el condicionamiento en los primeros pasos
+  —los que fijan color y estructura global— y el muestreo desde ruido puro
+  produce rostros correctos en forma pero lavados en color.
+- `vpred` (vigente): mismo U-Net con parametrización **v** de Salimans & Ho,
+  `v = sqrt(ab)·eps − sqrt(1−ab)·x0`. A ruido alto el objetivo equivale a la
+  imagen limpia, de modo que el condicionamiento manda desde el primer paso y
+  la proyección a x0 es estable en ambos extremos; muestreo DDIM de 8 pasos.
 
 Reanudable con `--resume`: el checkpoint guarda pesos, EMA, optimizador, paso
 y configuración completa. Cada `--sample-every` pasos genera las 8 muestras de
@@ -93,13 +101,15 @@ def generate(
     for index in range(DDIM_STEPS):
         t, t_next = times[index], times[index + 1]
         ab_t = cosine_alpha_bar(t)
-        ab_next = (
-            cosine_alpha_bar(t_next)
-            if index + 1 < DDIM_STEPS
-            else torch.tensor(1.0, device=device)
-        )
-        epsilon = model(x, t.expand(batch), attributes)
-        x0 = (x - (1 - ab_t).sqrt() * epsilon) / ab_t.sqrt()
+        ab_next = cosine_alpha_bar(t_next)
+        prediction = model(x, t.expand(batch), attributes)
+        if formulation == "vpred":
+            # x0 y eps se despejan de v sin dividir por sqrt(ab): estable en t→1.
+            x0 = ab_t.sqrt() * x - (1 - ab_t).sqrt() * prediction
+            epsilon = (1 - ab_t).sqrt() * x + ab_t.sqrt() * prediction
+        else:
+            epsilon = prediction
+            x0 = (x - (1 - ab_t).sqrt() * epsilon) / ab_t.sqrt()
         x = ab_next.sqrt() * x0.clamp(-1, 1) + (1 - ab_next).sqrt() * epsilon
     return x
 
@@ -128,7 +138,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--dataset-dir", type=Path, default=Path("data/distill-teacher-v1"))
-    parser.add_argument("--formulation", choices=("direct", "diffusion"), required=True)
+    parser.add_argument(
+        "--formulation", choices=("direct", "diffusion", "vpred"), required=True
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=50_000)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -242,7 +254,11 @@ def main() -> None:
             epsilon = torch.randn_like(images)
             noisy = ab.sqrt() * images + (1 - ab).sqrt() * epsilon
             prediction = student(noisy, t, attributes)
-            loss = torch.nn.functional.mse_loss(prediction, epsilon)
+            if args.formulation == "vpred":
+                target = ab.sqrt() * epsilon - (1 - ab).sqrt() * images
+            else:
+                target = epsilon
+            loss = torch.nn.functional.mse_loss(prediction, target)
         if not torch.isfinite(loss.detach()):
             raise RuntimeError(f"Pérdida no finita en el paso {step + 1}")
         loss.backward()

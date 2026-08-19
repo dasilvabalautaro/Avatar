@@ -180,16 +180,28 @@ Completado:
   (`docs/experiments/student-direct-2026-08-19.md`). Nota operativa: batch 32
   en fp32 excede la VRAM de la 4090; batch 16 usa 40.4 GiB.
 
+- formulación B (difusión con **predicción de epsilon**) descartada
+  (2026-08-19), detenida en el paso 10,000: avance decisivo frente a A —los
+  rasgos faciales sí aparecen— pero el color global sale lavado. El
+  diagnóstico separó modelo de muestreador: el modelo **reconstruye x0
+  perfectamente** desde una imagen real ruidosa a t=0.5, mientras a t=0.99 la
+  proyección estalla a (−49, +37). Causa de fondo: a ruido alto la predicción
+  óptima de epsilon es la propia entrada, así que los primeros pasos de la
+  cadena quedan sin condicionar. Evidencia con hashes en
+  `artifacts/student-diffusion-1/`
+  (`docs/experiments/student-diffusion-eps-2026-08-19.md`).
+
 En curso:
 
-- Fase 3 — etapa E4 del ADR 0010, **formulación B (difusión) corriendo en la
-  instancia Vast** (2026-08-19): `scripts/train_student.py --formulation
-  diffusion --batch-size 16`, 50,000 pasos, lr 1e-4, misma release v1.0.0 y
-  semilla 42; muestreo DDIM de 8 pasos, checkpoint reanudable y muestras de
-  control cada 5,000 pasos en `artifacts/student-diffusion-1/`, log en
-  `/workspace/student-diffusion-1.log` (~14 h). Es la **iteración única** de
-  respaldo del punto 4 del ADR 0010. **La instancia debe seguir encendida
-  hasta que termine.**
+- Fase 3 — **formulación `vpred` corriendo en la instancia Vast**
+  (2026-08-19): parametrización v de Salimans & Ho
+  (`v = sqrt(ab)·eps − sqrt(1−ab)·x0`), que a ruido alto equivale a predecir
+  la imagen limpia y despeja x0 sin dividir por sqrt(ab) (error 1.19e-07 a
+  t=0.999, donde epsilon estallaba). `scripts/train_student.py --formulation
+  vpred --batch-size 16 --sample-every 2500`, 50,000 pasos, misma release y
+  semilla; salida en `artifacts/student-vpred-1/`, log en
+  `/workspace/student-vpred-1.log` (~14 h). **La instancia debe seguir
+  encendida hasta que termine.**
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -197,11 +209,11 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Esperar el fin de la **formulación B (difusión)**, en curso en la instancia
-> Vast (~14 h). Vigilar las muestras de control: si a los 10,000–15,000 pasos
-> siguen sin aparecer rasgos faciales, diagnosticar como en la formulación A
-> (reconstrucción de captions del split train) antes de agotar la corrida. Al
-> terminar: bajar `artifacts/student-diffusion-1/` (checkpoint y muestras),
+> Esperar el fin de la **formulación `vpred`**, en curso en la instancia Vast
+> (~14 h; muestras de control cada 2,500 pasos). Vigilar el color global de
+> las muestras: si a los 5,000 pasos sigue lavado como en epsilon, el
+> problema no era la parametrización y hay que detener y reevaluar. Al
+> terminar: bajar `artifacts/student-vpred-1/` (checkpoint y muestras),
 > evaluar la **compuerta visual ≥ 6/8** con rostros de adultos y fidelidad de
 > atributos comparable al maestro, y registrar el experimento. Si pasa → E5
 > (exportación ONNX + INT8 + benchmark en el TECNO, RNF-01/02/03). Si falla →
