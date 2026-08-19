@@ -170,14 +170,25 @@ Completado:
   bajado directo y verificado en local (~2 s por muestra; costo ~1–2 USD)
   (`docs/experiments/distill-teacher-dataset-2026-08-19.md`).
 
+- etapa E3 con la **formulación A (directa) descartada** (2026-08-19):
+  detenida en el paso 25,000 de 50,000. Aprendió toda la estructura de baja
+  frecuencia (silueta, pelo, piel, fondo) pero **ningún rasgo facial**; el
+  diagnóstico sobre muestras del split **train** mostró que no ajusta ni los
+  datos de entrenamiento (no es brecha de generalización) — patrón propio de
+  la regresión L1 con entrada de ruido puro. Evidencia archivada con hashes
+  en `artifacts/student-direct-1/`
+  (`docs/experiments/student-direct-2026-08-19.md`). Nota operativa: batch 32
+  en fp32 excede la VRAM de la 4090; batch 16 usa 40.4 GiB.
+
 En curso:
 
-- Fase 3 — etapa E3 del ADR 0010 **corriendo en la instancia Vast**
-  (2026-08-19): `scripts/train_student.py --formulation direct
-  --batch-size 16` (batch 32 fp32 excede VRAM; con 16 usa 40.4 GiB), 50,000
-  pasos, lr 1e-4, sobre la release v1.0.0; checkpoint reanudable y muestras
-  de control cada 5,000 pasos en `artifacts/student-direct-1/`, log en
-  `/workspace/student-direct-1.log`. **La instancia debe seguir encendida
+- Fase 3 — etapa E4 del ADR 0010, **formulación B (difusión) corriendo en la
+  instancia Vast** (2026-08-19): `scripts/train_student.py --formulation
+  diffusion --batch-size 16`, 50,000 pasos, lr 1e-4, misma release v1.0.0 y
+  semilla 42; muestreo DDIM de 8 pasos, checkpoint reanudable y muestras de
+  control cada 5,000 pasos en `artifacts/student-diffusion-1/`, log en
+  `/workspace/student-diffusion-1.log` (~14 h). Es la **iteración única** de
+  respaldo del punto 4 del ADR 0010. **La instancia debe seguir encendida
   hasta que termine.**
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
@@ -186,15 +197,18 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Esperar el fin de la etapa **E3** (entrenamiento del estudiante, formulación
-> `direct`, en curso en la instancia Vast; ~1 s/paso → ~14 h). Al terminar:
-> bajar `artifacts/student-direct-1/` (checkpoint + muestras de control),
-> evaluar la **compuerta visual ≥ 6/8** con las muestras de control del paso
-> final (8 casos de validation, todas de adultos), registrar el experimento
-> en `docs/experiments/` y decidir según el ADR 0010: si pasa → E5
-> (exportación ONNX + INT8 + benchmark en el TECNO); si falla → una única
-> iteración de la formulación `diffusion` (E4). Sólo destruir la instancia
-> tras traer los artefactos con valor.
+> Esperar el fin de la **formulación B (difusión)**, en curso en la instancia
+> Vast (~14 h). Vigilar las muestras de control: si a los 10,000–15,000 pasos
+> siguen sin aparecer rasgos faciales, diagnosticar como en la formulación A
+> (reconstrucción de captions del split train) antes de agotar la corrida. Al
+> terminar: bajar `artifacts/student-diffusion-1/` (checkpoint y muestras),
+> evaluar la **compuerta visual ≥ 6/8** con rostros de adultos y fidelidad de
+> atributos comparable al maestro, y registrar el experimento. Si pasa → E5
+> (exportación ONNX + INT8 + benchmark en el TECNO, RNF-01/02/03). Si falla →
+> conforme al punto 4 del ADR 0009 y al ADR 0010 no se pagan más iteraciones
+> del mismo mecanismo: la decisión vuelve al usuario (opción (c), servidor, o
+> un ADR nuevo). Sólo destruir la instancia tras traer los artefactos con
+> valor.
 
 ## 2. Repositorio y entorno
 
