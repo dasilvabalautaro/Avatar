@@ -1,6 +1,6 @@
 # Handoff de AvatarFace
 
-Actualizado: 2026-08-18, zona horaria `America/La_Paz`.
+Actualizado: 2026-08-19, zona horaria `America/La_Paz`.
 
 Este documento es el punto de entrada obligatorio para retomar el proyecto en
 otra sesión. El estado descrito corresponde al commit que contiene este archivo;
@@ -142,13 +142,19 @@ Completado:
   uniforme, normalizado, trayectorias)
   (`docs/experiments/wuerstchen-distill-stage-1d-2026-08-18.md`).
 
+- decisión del usuario registrada en **ADR 0010** (2026-08-19): se mantiene el
+  alcance offline y la vía es la **reducción arquitectónica** — estudiante
+  compacto (U-Net 30–60 M, 256 px, condicionamiento por atributos sin encoder
+  de texto de terceros) entrenado desde cero sobre salidas del maestro
+  (LoRA escala-3, receta oficial); tope de fase 40 h de RTX 4090; diseño y
+  presupuesto por etapas en `docs/student-distill-design.md`.
+
 En curso:
 
-- Fase 3 — integración del modelo real. La destilación progresiva quedó
-  **cerrada** tras cuatro fallos de compuerta en la etapa 1 (2026-08-18).
-  Conforme al punto 4 del ADR 0009, las opciones restantes son una **decisión
-  del usuario**: (c) aceptar el modelo en GPU/servidor y replantear el alcance
-  offline, o una reducción arquitectónica profunda del estudiante (ADR propio).
+- Fase 3 — integración del modelo real por la vía del ADR 0010, etapa E1
+  (trabajo local, sin GPU): parser de atributos en dominio, muestreador de
+  captions de destilación, `scripts/generate_distill_dataset.py`,
+  `scripts/train_student.py` y U-Net del estudiante con sus pruebas.
   No hay instancias Vast activas ni razón para mantener alguna encendida.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
@@ -157,16 +163,16 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> La destilación progresiva del prior quedó **cerrada** (cuatro fallos de
-> compuerta en la etapa 1, último: `docs/experiments/wuerstchen-distill-stage-1d-2026-08-18.md`).
-> La próxima acción es una **decisión del usuario**, a registrar en un ADR
-> nuevo. Opciones según el punto 4 del ADR 0009: (c) aceptar el modelo en
-> GPU/servidor y replantear el alcance offline del producto; o una reducción
-> arquitectónica profunda (estudiante mucho menor que el prior de 994 M,
-> entrenado o destilado desde cero, con su propio ADR y presupuesto). No pagar
-> GPU hasta tener esa decisión. La instancia de la etapa 1d puede destruirse:
-> los artefactos con valor (logs, PNG, hashes) ya están en local y el
-> checkpoint no tiene valor de continuidad.
+> Ejecutar la etapa **E1** de `docs/student-distill-design.md` (todo local,
+> sin GPU): (1) parser de atributos `AvatarAttributes` en dominio con pruebas
+> puras; (2) muestreador determinista de 4096 pares (caption, seed) con
+> semilla 42 serializado a JSON con hash; (3)
+> `scripts/generate_distill_dataset.py` reanudable con receta oficial y
+> manifiesto SHA-256; (4) `scripts/train_student.py` (formulaciones A y B);
+> (5) U-Net del estudiante con pruebas de contrato que se saltan sin torch.
+> Validación estándar completa. Sólo al terminar E1 se alquila GPU para E2
+> (dataset de destilación, ~15–20 h); compuertas y tope de gasto en el
+> ADR 0010.
 
 ## 2. Repositorio y entorno
 
