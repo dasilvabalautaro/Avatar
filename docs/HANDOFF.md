@@ -147,15 +147,23 @@ Completado:
   compacto (U-Net 30–60 M, 256 px, condicionamiento por atributos sin encoder
   de texto de terceros) entrenado desde cero sobre salidas del maestro
   (LoRA escala-3, receta oficial); tope de fase 40 h de RTX 4090; diseño y
-  presupuesto por etapas en `docs/student-distill-design.md`.
+  presupuesto por etapas en `docs/student-distill-design.md`;
+- etapa E1 del ADR 0010 completada en local (2026-08-19), sin GPU:
+  parser de atributos con vocabulario cerrado v3 y filtro RF-09
+  (`domain/attributes.py`), muestreador determinista de pares de destilación
+  (`domain/distill.py` + comando `generate-distill-captions`), U-Net del
+  estudiante de 52,231,267 parámetros por defecto
+  (`infrastructure/training/student_unet.py`), fuente `AF-DISTILL-001`
+  registrada en `configs/dataset-sources.json`, y scripts GPU reanudables
+  `scripts/generate_distill_dataset.py` (maestro → manifiesto auditable) y
+  `scripts/train_student.py` (formulaciones `direct` y `diffusion`, EMA,
+  muestras de control); bucle de entrenamiento e inferencia verificado en
+  smoke CPU local.
 
 En curso:
 
-- Fase 3 — integración del modelo real por la vía del ADR 0010, etapa E1
-  (trabajo local, sin GPU): parser de atributos en dominio, muestreador de
-  captions de destilación, `scripts/generate_distill_dataset.py`,
-  `scripts/train_student.py` y U-Net del estudiante con sus pruebas.
-  No hay instancias Vast activas ni razón para mantener alguna encendida.
+- Fase 3 — vía del ADR 0010, etapa E2 pendiente: generar el dataset de
+  destilación en GPU. No hay instancias Vast activas.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -163,16 +171,16 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Ejecutar la etapa **E1** de `docs/student-distill-design.md` (todo local,
-> sin GPU): (1) parser de atributos `AvatarAttributes` en dominio con pruebas
-> puras; (2) muestreador determinista de 4096 pares (caption, seed) con
-> semilla 42 serializado a JSON con hash; (3)
-> `scripts/generate_distill_dataset.py` reanudable con receta oficial y
-> manifiesto SHA-256; (4) `scripts/train_student.py` (formulaciones A y B);
-> (5) U-Net del estudiante con pruebas de contrato que se saltan sin torch.
-> Validación estándar completa. Sólo al terminar E1 se alquila GPU para E2
-> (dataset de destilación, ~15–20 h); compuertas y tope de gasto en el
-> ADR 0010.
+> Ejecutar la etapa **E2** de `docs/student-distill-design.md`: alquilar una
+> RTX 4090 en Vast, correr `scripts/bootstrap-vast.sh`, restaurar el
+> checkpoint LoRA escala-3 por el flujo verificado, generar los captions con
+> `avatar-face generate-distill-captions` en la instancia y lanzar
+> `scripts/generate_distill_dataset.py` (reanudable; ~6–10 s por muestra,
+> 4096 muestras ≈ 9–15 h). Al terminar: `audit-dataset`, `freeze-dataset`,
+> traer manifiesto+lock+imágenes por el flujo de `transfer/` y registrar el
+> experimento en `docs/experiments/`. Después E3: `scripts/train_student.py
+> --formulation direct` (50k pasos) y compuerta visual ≥ 6/8 sobre las
+> muestras de control. Presupuesto y compuertas en el ADR 0010.
 
 ## 2. Repositorio y entorno
 
@@ -200,9 +208,9 @@ deben conservarse.
 
 En el momento de este handoff:
 
-- pytest: 52 pruebas superadas;
+- pytest: 71 pruebas superadas;
 - Ruff: sin hallazgos;
-- mypy estricto: sin errores en 38 archivos fuente;
+- mypy estricto: sin errores en 41 archivos fuente;
 - Gradle `:app:assembleDebug`: exitoso;
 - smoke dataset: 64 muestras, 64 hashes únicos, cero hallazgos (generador v3,
   manifiesto v1.1.0);

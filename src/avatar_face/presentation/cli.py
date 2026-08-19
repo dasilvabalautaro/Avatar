@@ -115,6 +115,17 @@ def _parser() -> argparse.ArgumentParser:
     training_dataset.add_argument("--image-size", type=int, default=256)
     training_dataset.add_argument("--overwrite", action="store_true")
 
+    distill_captions = commands.add_parser(
+        "generate-distill-captions",
+        help="Genera los pares (caption, seed) deterministas del dataset de destilación.",
+    )
+    distill_captions.add_argument(
+        "--output", type=Path, default=Path("artifacts/distill/captions-v1.json")
+    )
+    distill_captions.add_argument("--samples", type=int, default=4096)
+    distill_captions.add_argument("--seed", type=int, default=42)
+    distill_captions.add_argument("--overwrite", action="store_true")
+
     dataset_audit = commands.add_parser(
         "audit-dataset", help="Verifica licencias, hashes y duplicados del dataset."
     )
@@ -338,6 +349,34 @@ def _generate_training_dataset(
     return 0
 
 
+def _generate_distill_captions(output: Path, samples: int, seed: int, overwrite: bool) -> int:
+    import hashlib
+
+    from avatar_face.domain.distill import distill_captions_payload
+
+    if output.exists() and not overwrite:
+        print(f"El archivo {output} ya existe; usa --overwrite.")
+        return 2
+    payload = distill_captions_payload(samples, seed)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
+    output.write_text(serialized, encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                "output": str(output),
+                "samples": payload["samples"],
+                "splits": payload["splits"],
+                "seed": seed,
+                "sha256": hashlib.sha256(serialized.encode("utf-8")).hexdigest(),
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
 def _audit_dataset(manifest_path: Path) -> int:
     from avatar_face.infrastructure.dataset.json_auditor import JsonDatasetAuditor
 
@@ -452,6 +491,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return _generate_training_dataset(
             parsed.output_dir, parsed.samples, parsed.seed, parsed.overwrite, parsed.version,
             parsed.image_size,
+        )
+    if parsed.command == "generate-distill-captions":
+        return _generate_distill_captions(
+            parsed.output, parsed.samples, parsed.seed, parsed.overwrite
         )
     if parsed.command == "audit-dataset":
         return _audit_dataset(parsed.manifest)

@@ -105,7 +105,7 @@ python -m pip install --no-user --no-cache-dir -e '.[dev]'
 Validación estándar antes de dar por terminado cualquier cambio:
 
 ```bash
-.venv/bin/pytest          # 52 pruebas
+.venv/bin/pytest          # todas las pruebas, sin fallos
 .venv/bin/ruff check .    # sin hallazgos
 .venv/bin/mypy src        # estricto, sin errores
 git diff --check
@@ -126,8 +126,8 @@ Comandos CLI disponibles (todos emiten resultados explícitos, la mayoría JSON)
 `status`, `validate-prompt`, `audit-candidates`, `describe-feasibility`,
 `export-feasibility`, `export-feasibility-components`, `quantize-feasibility`,
 `benchmark-android`, `generate-smoke-dataset`, `generate-training-dataset`,
-`audit-dataset`, `freeze-dataset`, `verify-frozen-dataset`, `train-smoke`,
-`preflight-vast`.
+`generate-distill-captions`, `audit-dataset`, `freeze-dataset`,
+`verify-frozen-dataset`, `train-smoke`, `preflight-vast`.
 
 ## Estilo de código y convenciones
 
