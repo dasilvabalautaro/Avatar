@@ -126,6 +126,15 @@ def _parser() -> argparse.ArgumentParser:
     distill_captions.add_argument("--seed", type=int, default=42)
     distill_captions.add_argument("--overwrite", action="store_true")
 
+    render = commands.add_parser(
+        "render",
+        help="Genera un avatar de rostro adulto a partir de texto, sin modelo neuronal.",
+    )
+    render.add_argument("text")
+    render.add_argument("--output", type=Path, default=Path("artifacts/avatar.png"))
+    render.add_argument("--image-size", type=int, default=256)
+    render.add_argument("--seed", type=int, default=42)
+
     dataset_audit = commands.add_parser(
         "audit-dataset", help="Verifica licencias, hashes y duplicados del dataset."
     )
@@ -377,6 +386,34 @@ def _generate_distill_captions(output: Path, samples: int, seed: int, overwrite:
     return 0
 
 
+def _render(text: str, output: Path, image_size: int, seed: int) -> int:
+    """Texto → atributos → dibujo vectorial. El filtro RF-09 vive en AvatarPrompt."""
+    from avatar_face.domain.attributes import ATTRIBUTE_ORDER, attributes_from_prompt
+    from avatar_face.infrastructure.rendering.avatar_renderer import FlatVectorAvatarRenderer
+
+    try:
+        prompt = AvatarPrompt(text, seed, image_size)
+    except InvalidPromptError as error:
+        print(f"Prompt inválido: {error}")
+        return 2
+    attributes = attributes_from_prompt(prompt)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    FlatVectorAvatarRenderer(image_size=image_size).render(attributes).save(output)
+    print(
+        json.dumps(
+            {
+                "output": str(output),
+                "image_size": image_size,
+                "caption": attributes.caption(),
+                "attributes": {name: getattr(attributes, name) for name in ATTRIBUTE_ORDER},
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
 def _audit_dataset(manifest_path: Path) -> int:
     from avatar_face.infrastructure.dataset.json_auditor import JsonDatasetAuditor
 
@@ -496,6 +533,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return _generate_distill_captions(
             parsed.output, parsed.samples, parsed.seed, parsed.overwrite
         )
+    if parsed.command == "render":
+        return _render(parsed.text, parsed.output, parsed.image_size, parsed.seed)
     if parsed.command == "audit-dataset":
         return _audit_dataset(parsed.manifest)
     if parsed.command == "freeze-dataset":

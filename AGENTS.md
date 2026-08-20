@@ -126,7 +126,7 @@ Comandos CLI disponibles (todos emiten resultados explícitos, la mayoría JSON)
 `status`, `validate-prompt`, `audit-candidates`, `describe-feasibility`,
 `export-feasibility`, `export-feasibility-components`, `quantize-feasibility`,
 `benchmark-android`, `generate-smoke-dataset`, `generate-training-dataset`,
-`generate-distill-captions`, `audit-dataset`, `freeze-dataset`,
+`generate-distill-captions`, `render`, `audit-dataset`, `freeze-dataset`,
 `verify-frozen-dataset`, `train-smoke`, `preflight-vast`.
 
 ## Estilo de código y convenciones

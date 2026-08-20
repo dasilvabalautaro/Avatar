@@ -247,16 +247,24 @@ Completado:
   CPU ARM. FP32 es correcto pero tarda 11.05 s. Tamaño y memoria cumplen con
   holgura en todas las variantes (8–30 MB de 250 MB; 0.34–0.47 GiB de 1.0 GB).
 
+- **ADR 0012** (2026-08-20): el avatar se **dibuja por código**, no se genera
+  con un modelo neuronal. El estudiante estaba condicionado sólo por los 9
+  atributos discretos, así que no aportaba poder expresivo sobre el
+  vocabulario cerrado; y ambos extremos del recorrido ya existían en código
+  determinista. Implementado en
+  `infrastructure/rendering/avatar_renderer.py` con supersampling ×4 y
+  reducción Lanczos (nitidez por construcción) y expuesto como
+  `avatar-face render "<texto>"`, con el filtro RF-09 aplicado antes de
+  dibujar. Medido: **~11 ms por avatar de 256 px y cero pesos**, frente a los
+  4.46 s con imagen inservible del estudiante cuantizado. Muestras en
+  `artifacts/render-demo/`.
+
 En curso:
 
-- Fase 3 — **decisión del usuario pendiente**. Tamaño y memoria sobran; lo que
-  no se resuelve es la tensión entre **nitidez** (pide más capacidad y más
-  pasos) y **latencia** (pide menos de ambos). Ambos extremos están medidos:
-  52 M con 8 pasos se acerca al estilo del maestro pero tarda 55.3 s; 7.5 M
-  con 4 pasos entra en 4.46 s pero sale difuso. El plan de 128 px queda
-  **descartado**: habría empeorado la nitidez, que es justo lo que falla.
-  Opciones en `docs/experiments/student-lite-2026-08-20.md`. No hay trabajo de
-  GPU en curso: la instancia puede destruirse.
+- Fase 4 — llevar el dibujo a la app Android (Kotlin), reimplementando el
+  trazado con las primitivas de Canvas sobre la misma tabla de coordenadas de
+  256 px, y validar en el dispositivo. No hay trabajo de GPU pendiente ni
+  instancias que mantener encendidas.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -264,23 +272,17 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> **Decisión del usuario, a registrar en un ADR nuevo.** El estudiante ligero
-> supera la compuerta de calidad y cumple tamaño y memoria con holgura; lo que
-> falta es cerrar 2.2× de latencia sin perder calidad (fp32: 11.05 s frente a
-> los 5 s de RNF-03). La cuantización posterior al entrenamiento está
-> **descartada con medición**: 8 bits produce ruido y 16 bits es más lento que
-> fp32 (`docs/experiments/student-lite-2026-08-20.md`).
+> Portar `FlatVectorAvatarRenderer` a la app Android (Kotlin) usando las
+> primitivas de `Canvas` sobre la misma tabla de coordenadas de 256 px, y
+> validar en el TECNO KM5s que el resultado es idéntico al de Python (mismo
+> hash de imagen o diferencia de píxeles despreciable) y que el tiempo de
+> dibujo es de milisegundos. Después, revisar los requisitos: RNF-01 a
+> RNF-06 dejan de tener sentido tal como están escritos, porque ya no hay
+> modelo ni cuantización en el camino de inferencia (ADR 0012).
 >
-> Opción recomendada: **reentrenar a 128 px de resolución interna con
-> reescalado a 256** —el coste móvil lo dominan las activaciones, así que
-> dividir por cuatro los píxeles debería dar ~2.8 s en fp32, con margen y sin
-> cuantizar; el arte vectorial plano tolera bien el reescalado—. Exige un ADR
-> con su presupuesto (~3–4 h de GPU) y reutiliza la release congelada
-> `avatarface-distill-teacher` v1.0.0, que **no se regenera**.
->
-> Alternativas: QAT (rescataría el INT8 de 4.46 s, pero exige implementación
-> nueva) o aceptar 2 pasos en fp32 (5.5 s, sigue fuera y con peor calidad).
-> No pagar GPU hasta tener la decisión.
+> Trabajo de pulido opcional del dibujo, con las muestras del maestro como
+> referencia: la boca «calm» sale como un óvalo rojo algo plano y la nariz es
+> muy sutil.
 
 ## 2. Repositorio y entorno
 
