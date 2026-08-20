@@ -37,6 +37,16 @@ class StudentUNetConfig:
             raise ValueError("Se requiere al menos un atributo de condicionamiento.")
 
 
+def _norm_groups(channels: int) -> int:
+    """Grupos de GroupNorm compatibles con cualquier ancho.
+
+    Devuelve 32 —el valor histórico— siempre que los canales sean múltiplo de
+    32, y el mayor divisor común en otro caso, para que las variantes ligeras
+    con anchos no múltiplos de 32 sean construibles.
+    """
+    return math.gcd(32, channels)
+
+
 def _timestep_embedding(ratio: Tensor, dim: int) -> Tensor:
     """Embedding sinusoidal del ratio del scheduler (0–1), escalado a 0–1000."""
     half = dim // 2
@@ -53,10 +63,10 @@ class ResidualBlock(nn.Module):
 
     def __init__(self, in_channels: int, out_channels: int, condition_dim: int) -> None:
         super().__init__()
-        self.norm1 = nn.GroupNorm(32, in_channels)
+        self.norm1 = nn.GroupNorm(_norm_groups(in_channels), in_channels)
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
         self.film = nn.Linear(condition_dim, out_channels * 2)
-        self.norm2 = nn.GroupNorm(32, out_channels)
+        self.norm2 = nn.GroupNorm(_norm_groups(out_channels), out_channels)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.skip = (
             nn.Conv2d(in_channels, out_channels, 1)
@@ -80,7 +90,7 @@ class SelfAttention2d(nn.Module):
             raise ValueError("Los canales de atención deben ser divisibles por las cabezas.")
         self.heads = heads
         self.scale = 1.0 / math.sqrt(channels // heads)
-        self.norm = nn.GroupNorm(32, channels)
+        self.norm = nn.GroupNorm(_norm_groups(channels), channels)
         self.qkv = nn.Conv2d(channels, channels * 3, 1)
         self.out = nn.Conv2d(channels, channels, 1)
 
@@ -184,7 +194,7 @@ class StudentUNet(nn.Module):
             )
 
         self.head = nn.Sequential(
-            nn.GroupNorm(32, current),
+            nn.GroupNorm(_norm_groups(current), current),
             nn.SiLU(),
             nn.Conv2d(current, 3, 3, padding=1),
         )

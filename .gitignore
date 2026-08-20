@@ -27,5 +27,6 @@ transfer/SHA256SUMS*
 android/.gradle/
 android/local.properties
 android/**/build/
+android/app/src/main/assets/*.onnx
 *.apk
 *.aab

@@ -43,7 +43,7 @@ from avatar_face.infrastructure.training.student_unet import StudentUNet, Studen
 
 CONTROL_SAMPLES = 8
 EMA_DECAY = 0.999
-DDIM_STEPS = 8
+DEFAULT_DDIM_STEPS = 8
 
 
 def cosine_alpha_bar(t: torch.Tensor) -> torch.Tensor:
@@ -88,6 +88,7 @@ def generate(
     image_size: int,
     generator: torch.Generator,
     device: torch.device,
+    ddim_steps: int = DEFAULT_DDIM_STEPS,
 ) -> torch.Tensor:
     """Inferencia del estudiante: 1 paso (direct) o DDIM de 8 pasos (diffusion)."""
     batch = attributes.shape[0]
@@ -97,8 +98,8 @@ def generate(
     if formulation == "direct":
         ratio = torch.zeros(batch, device=device)
         return model(x, ratio, attributes)
-    times = torch.linspace(1.0, 0.0, DDIM_STEPS + 1, device=device)
-    for index in range(DDIM_STEPS):
+    times = torch.linspace(1.0, 0.0, ddim_steps + 1, device=device)
+    for index in range(ddim_steps):
         t, t_next = times[index], times[index + 1]
         ab_t = cosine_alpha_bar(t)
         ab_next = cosine_alpha_bar(t_next)
@@ -123,11 +124,14 @@ def save_control_samples(
     directory: Path,
     step: int,
     device: torch.device,
+    ddim_steps: int,
 ) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     generator = torch.Generator(device=device).manual_seed(42)
     model.eval()
-    outputs = generate(model, attributes, formulation, image_size, generator, device)
+    outputs = generate(
+        model, attributes, formulation, image_size, generator, device, ddim_steps
+    )
     model.train()
     for record, output in zip(records, outputs, strict=True):
         to_pil(output).save(directory / f"step-{step:06d}-{record['identifier']}.png")
@@ -148,6 +152,18 @@ def main() -> None:
     parser.add_argument("--warmup-steps", type=int, default=500)
     parser.add_argument("--sample-every", type=int, default=5_000)
     parser.add_argument("--base-channels", type=int, default=96)
+    parser.add_argument(
+        "--attention-resolutions",
+        default="32",
+        help="resoluciones con atención, separadas por comas (32 en el modelo base; 16 en "
+        "las variantes ligeras, donde la atención a 32 px domina el coste móvil)",
+    )
+    parser.add_argument(
+        "--ddim-steps",
+        type=int,
+        default=DEFAULT_DDIM_STEPS,
+        help="pasos de muestreo de las muestras de control y del contrato móvil",
+    )
     parser.add_argument("--image-size", type=int, default=256)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", action="store_true")
@@ -174,7 +190,13 @@ def main() -> None:
             f"El dataset es de {train_images.shape[-1]} px y se pidió {args.image_size} px"
         )
 
-    config = StudentUNetConfig(image_size=args.image_size, base_channels=args.base_channels)
+    config = StudentUNetConfig(
+        image_size=args.image_size,
+        base_channels=args.base_channels,
+        attention_resolutions=tuple(
+            int(x) for x in args.attention_resolutions.split(",") if x.strip()
+        ),
+    )
     student = StudentUNet(config).to(device)
     ema = StudentUNet(config).to(device)
     ema.load_state_dict(student.state_dict())
@@ -214,7 +236,7 @@ def main() -> None:
                     "learning_rate": args.learning_rate,
                     "warmup_steps": args.warmup_steps,
                     "ema_decay": EMA_DECAY,
-                    "ddim_steps": DDIM_STEPS,
+                    "ddim_steps": args.ddim_steps,
                     "dataset_dir": str(args.dataset_dir),
                 },
                 "student_config": {
@@ -290,6 +312,7 @@ def main() -> None:
                 output_dir / "control",
                 step + 1,
                 device,
+                args.ddim_steps,
             )
 
     save_checkpoint(args.steps)

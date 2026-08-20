@@ -1,6 +1,6 @@
 # Handoff de AvatarFace
 
-Actualizado: 2026-08-19, zona horaria `America/La_Paz`.
+Actualizado: 2026-08-20, zona horaria `America/La_Paz`.
 
 Este documento es el punto de entrada obligatorio para retomar el proyecto en
 otra sesión. El estado descrito corresponde al commit que contiene este archivo;
@@ -209,12 +209,27 @@ Completado:
   2.2 ms local vs. 67.5 ms medidos en el TECNO). Medición física pendiente
   (RNF-09): el teléfono no estaba conectado.
 
+- medición **en dispositivo** del artefacto del ADR 0010 (2026-08-20, TECNO
+  KM5s, CPU, INT8): 6907 ms/paso → 55.3 s con 8 pasos (RNF-03 pide ≤ 5 s),
+  memoria 0.85 GiB (RNF-02 cumple, justo), tamaño 53.7 MB (RNF-01 cumple con
+  holgura 4.7×). La brecha real de latencia es **11×**, no los ~38 % que
+  sugería la extrapolación (factor local↔dispositivo real: 8.9×, no 31×).
+- **ADR 0011** (2026-08-20): estudiante ligero con presupuesto **medido en
+  dispositivo** usando variantes de pesos aleatorios —base 32:
+  7,498,787 parámetros, 8.4 MB, 1192 ms/paso, **4.8 s con 4 pasos**,
+  0.34 GiB; base 24: 959 ms/paso, 3.8 s, como reserva—. El coste móvil lo
+  dominan las activaciones a 256 px, no los pesos.
+- preparación local del ADR 0011 completada: `StudentUNet` admite anchos no
+  múltiplos de 32 (grupos de GroupNorm = `gcd(32, canales)`, retrocompatible;
+  el checkpoint de 52 M sigue cargando), `scripts/train_student.py` gana
+  `--attention-resolutions` y `--ddim-steps`, y el APK acepta la firma del
+  estudiante con los modelos de medición como assets.
+
 En curso:
 
-- Fase 3 — **decisión del usuario pendiente**. La calidad y el tamaño están
-  resueltos; el cuello de botella es el cómputo. No hay trabajo de GPU
-  pendiente: la instancia Vast puede destruirse (todos los artefactos con
-  valor están en local con hashes).
+- Fase 3 — **entrenamiento del estudiante ligero (ADR 0011) pendiente de
+  contratar GPU**. Todo el trabajo local está hecho y el dataset ya está
+  congelado (no se regenera). Comando exacto en la próxima tarea.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -222,18 +237,25 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Esperar el fin de la **formulación `vpred`**, en curso en la instancia Vast
-> (~14 h; muestras de control cada 2,500 pasos). Vigilar el color global de
-> las muestras: si a los 5,000 pasos sigue lavado como en epsilon, el
-> problema no era la parametrización y hay que detener y reevaluar. Al
-> terminar: bajar `artifacts/student-vpred-1/` (checkpoint y muestras),
-> evaluar la **compuerta visual ≥ 6/8** con rostros de adultos y fidelidad de
-> atributos comparable al maestro, y registrar el experimento. Si pasa → E5
-> (exportación ONNX + INT8 + benchmark en el TECNO, RNF-01/02/03). Si falla →
-> conforme al punto 4 del ADR 0009 y al ADR 0010 no se pagan más iteraciones
-> del mismo mecanismo: la decisión vuelve al usuario (opción (c), servidor, o
-> un ADR nuevo). Sólo destruir la instancia tras traer los artefactos con
-> valor.
+> Contratar una RTX 4090 en Vast y entrenar el **estudiante ligero** del
+> ADR 0011. El dataset ya está congelado y **no se regenera**; sólo hay que
+> restaurarlo. Secuencia: `scripts/bootstrap-vast.sh`, subir por `scp` el
+> paquete `transfer/avatarface-distill-teacher-v1.tar` (154.6 MB, por debajo
+> del umbral de 200 MB de subida) y su hash, y lanzar:
+>
+> ```bash
+> python scripts/train_student.py --root /workspace/AvatarFace \
+>   --dataset-dir data/distill-teacher-v1 --formulation vpred \
+>   --base-channels 32 --attention-resolutions 16 --ddim-steps 4 \
+>   --batch-size 32 --sample-every 2500 --output artifacts/student-lite-1
+> ```
+>
+> Estimado 4–6 h (~2–3 USD). Al terminar: bajar checkpoint y muestras,
+> evaluar la compuerta (≥ 6/8 rostros válidos y 8/8 adultos, con muestras de
+> **4 pasos**), exportar a ONNX, cuantizar (selectiva si RNF-06 lo exige,
+> ADR 0006) y medir en el TECNO con
+> `avatar-face benchmark-android --serial 14254155BM000874`. El presupuesto
+> móvil de esta arquitectura ya está medido: 4.8 s con 4 pasos.
 
 ## 2. Repositorio y entorno
 

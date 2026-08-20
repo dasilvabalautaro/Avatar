@@ -113,10 +113,47 @@ class MainActivity : Activity() {
             conditionBuffer,
             longArrayOf(1, MODEL_WIDTH.toLong()),
         )
+        val studentElements = 3 * STUDENT_IMAGE_SIZE * STUDENT_IMAGE_SIZE
+        val studentSampleBuffer = ByteBuffer
+            .allocateDirect(studentElements * java.lang.Float.BYTES)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+        repeat(studentElements) { studentSampleBuffer.put(0.0f) }
+        studentSampleBuffer.rewind()
+        val studentSampleTensor = OnnxTensor.createTensor(
+            environment,
+            studentSampleBuffer,
+            longArrayOf(1, 3, STUDENT_IMAGE_SIZE.toLong(), STUDENT_IMAGE_SIZE.toLong()),
+        )
+        val studentRatioBuffer = ByteBuffer
+            .allocateDirect(java.lang.Float.BYTES)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+        studentRatioBuffer.put(0.5f)
+        studentRatioBuffer.rewind()
+        val studentRatioTensor = OnnxTensor.createTensor(
+            environment,
+            studentRatioBuffer,
+            longArrayOf(1),
+        )
+        val studentAttributesBuffer = ByteBuffer
+            .allocateDirect(STUDENT_ATTRIBUTES * java.lang.Long.BYTES)
+            .order(ByteOrder.nativeOrder())
+            .asLongBuffer()
+        repeat(STUDENT_ATTRIBUTES) { studentAttributesBuffer.put(0L) }
+        studentAttributesBuffer.rewind()
+        val studentAttributesTensor = OnnxTensor.createTensor(
+            environment,
+            studentAttributesBuffer,
+            longArrayOf(1, STUDENT_ATTRIBUTES.toLong()),
+        )
         val availableInputs = mapOf(
             "token_ids" to tokenTensor,
             "latent" to latentTensor,
             "condition" to conditionTensor,
+            "sample" to studentSampleTensor,
+            "ratio" to studentRatioTensor,
+            "attributes" to studentAttributesTensor,
         )
         val inputNames = session.inputNames
         val inputs = inputNames.associateWith { name ->
@@ -141,6 +178,9 @@ class MainActivity : Activity() {
         tokenTensor.close()
         latentTensor.close()
         conditionTensor.close()
+        studentSampleTensor.close()
+        studentRatioTensor.close()
+        studentAttributesTensor.close()
         session.close()
         options.close()
 
@@ -342,7 +382,16 @@ class MainActivity : Activity() {
             "avatarface-feasibility-bridge-fast-decoder.onnx",
             "avatarface-feasibility-bridge-fast-decoder-int8-preprocessed.onnx",
             "avatarface-feasibility-bridge-fast.onnx",
+            STUDENT_MODEL,
+            "avatarface-student.onnx",
+            "avatarface-student-lite-int8.onnx",
+            "avatarface-student-lite24-int8.onnx",
         )
+        // Estudiante del ADR 0010: un paso del U-Net; la app ejecuta la
+        // cadena DDIM completa multiplicando por STUDENT_DDIM_STEPS.
+        private const val STUDENT_MODEL = "avatarface-student-int8.onnx"
+        private const val STUDENT_IMAGE_SIZE = 256
+        private const val STUDENT_ATTRIBUTES = 9
         private const val RESULT_FILE = "benchmark-result.json"
         private const val DEFAULT_RUNS = 5
         private const val MAX_RUNS = 50
