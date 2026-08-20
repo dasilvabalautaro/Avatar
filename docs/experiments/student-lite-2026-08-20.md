@@ -1,6 +1,9 @@
-# Estudiante ligero: compuerta superada y muro de cuantización (2026-08-20)
+# Estudiante ligero: compuerta de calidad no superada y muro de cuantización (2026-08-20)
 
 Etapa de entrenamiento y medición del ADR 0011.
+
+**Resultado: la compuerta de calidad NO se supera.** La primera evaluación la
+dio por superada; fue un error de criterio, corregido más abajo.
 
 ## Entrenamiento
 
@@ -17,21 +20,40 @@ Etapa de entrenamiento y medición del ADR 0011.
 - No se descargaron los pesos de Würstchen: esta corrida entrena sólo sobre el
   dataset congelado, así que se omitió el bootstrap completo (~10 GB menos).
 
-## Compuerta del ADR 0011: **superada**
+## Compuerta del ADR 0011: **NO superada** (corregido el 2026-08-20)
 
-Muestras de control del paso 50,000, generadas con **4 pasos DDIM** (el
-contrato móvil) sobre captions del split validation:
+Registro de la corrección: en la primera evaluación se dio la compuerta por
+superada con 8/8. **Esa evaluación fue incorrecta** y el usuario la rechazó al
+ver las imágenes. El criterio aplicado fue «¿es un rostro de adulto
+reconocible con los atributos correctos?», y con ese criterio pasa; pero el
+estándar del producto es **arte vectorial plano al estilo del maestro**, y
+comparadas lado a lado con las salidas del maestro para los mismos captions
+las muestras del estudiante ligero **no lo cumplen**:
 
-- **rostros válidos: 8/8**; **adultos: 8/8**;
-- fondo 8/8, tono de piel 8/8, color de pelo 7/8 (`avatar-00051` sale lavado);
-- `avatar-00041` acierta el pelo rosa que el modelo de 52 M rendía violeta;
-- `avatar-00061` reproduce el desvío del propio maestro (pelo castaño y gafas
-  normales donde el caption pedía rosa y gafas de sol).
+- bordes difuminados, con aspecto de pintura al óleo en vez de vector plano;
+- regiones de color sin planos limpios;
+- rasgos deformados: ojos asimétricos en `avatar-00021` y `avatar-00031`;
+- gafas resueltas como manchas, no como trazos.
 
-El acabado es más «pincelado» que el del modelo de 52 M y aparece alguna
-asimetría ocular, pero los rostros son válidos. Con **3 pasos** también se
-obtienen rostros válidos, aunque más blandos y perdiendo las gafas de
-`avatar-00031`; 4 pasos es el punto correcto.
+Lo que el modelo **sí** acierta son los atributos globales: fondo 8/8, tono de
+piel 8/8, color de pelo 7/8, y `avatar-00041` mejora incluso al modelo de 52 M
+(pelo rosa correcto). Pero la fidelidad de atributos no basta: sin nitidez de
+estilo el artefacto no es utilizable como producto.
+
+Lección de método: la compuerta de los ADR 0010 y 0011 dice «rostros válidos» y
+«fidelidad comparable al maestro», y se evaluó sólo la segunda mitad. Toda
+evaluación futura debe hacerse **lado a lado contra la salida del maestro para
+el mismo caption**, y juzgar también nitidez, limpieza de bordes y simetría,
+no sólo la presencia de los atributos.
+
+### Escala de calidad observada
+
+| Origen | Nitidez | Veredicto |
+|---|---|---|
+| Maestro (Würstchen + LoRA) | vector plano nítido | referencia |
+| Estudiante 52 M, 8 pasos | bordes casi limpios, algo blando | cercano, aún no igual |
+| Estudiante 7.5 M, 4 pasos | difuso y deformado | **no aceptable** |
+| Generador procedimental (Pillow) | perfectamente nítido | estilo mucho más tosco |
 
 ## Medición en dispositivo (TECNO KM5s, ONNX Runtime 1.23.2, CPU)
 
@@ -79,19 +101,44 @@ es de **2.2×** (11.05 s en fp32 frente a 5 s).
 
 ## Palancas restantes
 
-Medidas y razonadas, en orden de relación coste/beneficio:
+El plan que se había propuesto (**resolución interna de 128 px con reescalado
+a 256**) queda **descartado**: atacaba la latencia pero habría empeorado
+justo el defecto que hace fallar la compuerta, porque reescalar difumina más
+los bordes.
 
-1. **Resolución interna de 128 px con reescalado a 256** — la evidencia del
-   ADR 0011 muestra que el coste móvil lo dominan las activaciones, no los
-   pesos, así que dividir por cuatro los píxeles debería llevar fp32 a ~2.8 s,
-   **con margen y sin cuantizar**. El dominio (arte vectorial plano) tolera
-   bien el reescalado. Exige reentrenar (~3–4 h de GPU).
-2. **Entrenamiento consciente de cuantización (QAT)** — haría viable el INT8
-   de 4.46 s conservando calidad, pero requiere implementación nueva y GPU.
-3. **2 pasos en fp32** — 5.5 s, sigue por encima y además degrada la calidad.
+La situación real es una tensión directa entre los dos ejes:
 
-La 1 es la recomendada. Elegir entre ellas es decisión del usuario, con su
-propio ADR y presupuesto.
+- la **nitidez** exige más capacidad y más pasos de muestreo;
+- la **latencia** exige menos de ambos.
+
+Ambos extremos están ahora medidos: 52 M con 8 pasos se acerca al estilo del
+maestro pero tarda 55.3 s; 7.5 M con 4 pasos entra en 4.46 s pero produce
+imágenes difusas. Ninguna configuración intermedia probada satisface los dos.
+
+Observación estructural, relevante para la decisión: el estudiante está
+condicionado **únicamente por los 9 atributos discretos** del vocabulario
+cerrado (unas 415,000 combinaciones posibles). No tiene más poder expresivo
+que ese vocabulario, así que el modelo funciona como un renderizador caro y
+borroso de nueve valores categóricos. El paso texto → atributos ya está
+resuelto en código determinista (`domain/attributes.py`), y el paso atributos
+→ imagen también existe en código (`infrastructure/dataset/procedural_generator.py`),
+con nitidez perfecta por construcción y coste de milisegundos. Lo que aporta
+el maestro sobre ese generador es **estética**, no capacidad expresiva: sus
+avatares son vectores planos atractivos frente a las formas geométricas toscas
+del generador actual.
+
+Opciones a decidir por el usuario, con su propio ADR:
+
+1. **Mejorar el renderizador procedimental** hasta acercarlo a la estética del
+   maestro. Es un problema de código puro: nitidez perfecta, milisegundos,
+   sin pesos, sin GPU, sin cuantización, offline por construcción. Renuncia a
+   la generación neuronal.
+2. **QAT** para rescatar el INT8 de 4.46 s conservando la nitidez del modelo
+   de 52 M; exige implementación nueva y GPU, y su techo de nitidez sigue sin
+   estar demostrado a 4 pasos.
+3. **Aceptar un presupuesto de latencia mayor** (revisar RNF-03) y usar un
+   modelo intermedio, midiendo antes qué nitidez da.
+4. Cambiar el alcance offline (opción (c) del ADR 0009).
 
 ## Artefactos
 

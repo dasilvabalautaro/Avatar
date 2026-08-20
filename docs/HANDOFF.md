@@ -225,11 +225,15 @@ Completado:
   `--attention-resolutions` y `--ddim-steps`, y el APK acepta la firma del
   estudiante con los modelos de medición como assets.
 
-- **compuerta del ADR 0011 superada** (2026-08-20): estudiante ligero de
+- **compuerta del ADR 0011 NO superada** (2026-08-20; corregido tras revisión del usuario): estudiante ligero de
   7,498,787 parámetros entrenado con `vpred` (50,000 pasos, pérdida final
-  0.020186) — **8/8 rostros válidos y 8/8 adultos con 4 pasos DDIM**, fondo
-  8/8, piel 8/8, pelo 7/8. Con 3 pasos también salen rostros válidos pero se
-  pierden detalles (gafas de `avatar-00031`)
+  0.020186). Acierta los atributos globales (fondo 8/8, piel 8/8, pelo 7/8)
+  pero **falla el estándar visual del producto**: bordes difuminados con
+  aspecto de pintura en vez de vector plano, rasgos deformados y gafas
+  resueltas como manchas. La primera evaluación lo dio por superado aplicando
+  sólo el criterio de atributos; el usuario lo rechazó al ver las imágenes.
+  **Toda evaluación futura debe ser lado a lado contra la salida del maestro
+  para el mismo caption, juzgando nitidez, bordes y simetría**
   (`docs/experiments/student-lite-2026-08-20.md`).
 - ajuste de hilos medido: el arnés usaba 4 y el MT6769 tiene 8; **6 es el
   óptimo** (1277 → 1212 → 1114 ms). El APK queda con `CPU_THREADS = 6`.
@@ -245,14 +249,14 @@ Completado:
 
 En curso:
 
-- Fase 3 — **decisión del usuario pendiente**. Calidad, tamaño y memoria están
-  resueltos; falta cerrar **2.2×** de latencia con calidad preservada
-  (11.05 s en fp32 frente a 5 s). Palanca recomendada: **resolución interna de
-  128 px con reescalado a 256** (el coste lo dominan las activaciones, no los
-  pesos; estimado ~2.8 s en fp32, sin cuantizar; ~3–4 h de GPU). Alternativas:
-  QAT para rescatar el INT8 de 4.46 s, o 2 pasos en fp32 (5.5 s, insuficiente
-  y peor calidad). No hay trabajo de GPU en curso: la instancia puede
-  destruirse (todos los artefactos están en local con hashes).
+- Fase 3 — **decisión del usuario pendiente**. Tamaño y memoria sobran; lo que
+  no se resuelve es la tensión entre **nitidez** (pide más capacidad y más
+  pasos) y **latencia** (pide menos de ambos). Ambos extremos están medidos:
+  52 M con 8 pasos se acerca al estilo del maestro pero tarda 55.3 s; 7.5 M
+  con 4 pasos entra en 4.46 s pero sale difuso. El plan de 128 px queda
+  **descartado**: habría empeorado la nitidez, que es justo lo que falla.
+  Opciones en `docs/experiments/student-lite-2026-08-20.md`. No hay trabajo de
+  GPU en curso: la instancia puede destruirse.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
