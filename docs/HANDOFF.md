@@ -191,17 +191,30 @@ Completado:
   `artifacts/student-diffusion-1/`
   (`docs/experiments/student-diffusion-eps-2026-08-19.md`).
 
+- **compuerta del ADR 0010 superada** con la formulación `vpred`
+  (parametrización v de Salimans & Ho), 50,000 pasos, pérdida final 0.006306
+  (2026-08-20): **8/8 rostros válidos, 8/8 adultos** sobre captions de
+  validation, fidelidad de atributos comparable al maestro (el desvío de
+  `avatar-00061` es del propio maestro y el estudiante lo reproduce; único
+  desvío propio: `avatar-00051`, pelo lavado). El estudiante de 52,231,267
+  parámetros **sí genera avatares válidos**
+  (`docs/experiments/student-vpred-2026-08-20.md`).
+- etapa E5 parcial (2026-08-20): ONNX exportado (209 MB, SHA-256 `85476a16…`)
+  y cuantizado a INT8 QDQ con calibración representativa
+  (`scripts/quantize_student_onnx.py`; **53.7 MB**, SHA-256 `29f5eee2…`).
+  **RNF-01 cumple con holgura 4.7×**; **RNF-06 no cumple** (8.4 % de
+  degradación de imagen final vs. 5 %); **RNF-03 no cumple por ~38×**
+  (775 ms/paso INT8 en CPU local → ~3.2 min por imagen en el dispositivo,
+  extrapolando con el factor ~31× que da el modelo sintético `micro`:
+  2.2 ms local vs. 67.5 ms medidos en el TECNO). Medición física pendiente
+  (RNF-09): el teléfono no estaba conectado.
+
 En curso:
 
-- Fase 3 — **formulación `vpred` corriendo en la instancia Vast**
-  (2026-08-19): parametrización v de Salimans & Ho
-  (`v = sqrt(ab)·eps − sqrt(1−ab)·x0`), que a ruido alto equivale a predecir
-  la imagen limpia y despeja x0 sin dividir por sqrt(ab) (error 1.19e-07 a
-  t=0.999, donde epsilon estallaba). `scripts/train_student.py --formulation
-  vpred --batch-size 16 --sample-every 2500`, 50,000 pasos, misma release y
-  semilla; salida en `artifacts/student-vpred-1/`, log en
-  `/workspace/student-vpred-1.log` (~14 h). **La instancia debe seguir
-  encendida hasta que termine.**
+- Fase 3 — **decisión del usuario pendiente**. La calidad y el tamaño están
+  resueltos; el cuello de botella es el cómputo. No hay trabajo de GPU
+  pendiente: la instancia Vast puede destruirse (todos los artefactos con
+  valor están en local con hashes).
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
