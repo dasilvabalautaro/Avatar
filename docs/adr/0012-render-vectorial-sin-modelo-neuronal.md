@@ -38,7 +38,10 @@ determinista: texto → atributos (`domain/attributes.py`) y atributos → dibuj
    diseña el dibujo.
 3. La nitidez se consigue por construcción: el dibujo se hace a 4× el tamaño
    pedido y se reduce con Lanczos, de modo que los bordes quedan suavizados
-   sin perder el plano de color.
+   sin perder el plano de color. Las siluetas —rostro, pelo, barba— se
+   describen con splines Catmull-Rom y arcos elípticos, no con rectángulos
+   redondeados, para que el resultado sea un avatar cuidado y no un montaje
+   de primitivas.
 4. El filtro de sólo adultos (RF-09) sigue viviendo en `AvatarPrompt`, antes
    del dibujo; el comando `avatar-face render` lo aplica.
 5. El trabajo neuronal previo **no se borra**: los ADR 0007 a 0011, sus
@@ -59,10 +62,13 @@ Frente a los requisitos no funcionales, medidos y no estimados:
 
 - El alcance offline (ADR 0002) queda garantizado por construcción: no hay
   pesos que descargar ni runtime de inferencia que alimentar.
-- La expresividad queda acotada al vocabulario cerrado de 9 atributos. **Esa
-  cota ya existía** en la vía neuronal, porque el condicionamiento era el
-  mismo; ampliar la expresividad significa ampliar el vocabulario y el
-  dibujo, que es trabajo de código.
+- La expresividad depende del vocabulario, que por eso se amplió el mismo día
+  a **17 atributos y 13,226,976,000,000 combinaciones**: el avatar sustituye a
+  una foto de perfil, así que una persona tiene que poder reconocerse en el
+  resultado. Los nueve atributos originales se conservan (los manifiestos
+  congelados siguen siendo válidos, `LEGACY_ATTRIBUTES`) y los ocho nuevos
+  —cejas, nariz, vello facial, gafas, pendientes, pecas, prenda y su color—
+  tienen valor por defecto. Ampliar más es trabajo de código, no de GPU.
 - La compuerta de licencias y la prohibición de rostros reales se cumplen
   trivialmente: no hay pesos de terceros ni datos de entrenamiento en el
   camino de inferencia.

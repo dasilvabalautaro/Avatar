@@ -256,8 +256,16 @@ Completado:
   reducción Lanczos (nitidez por construcción) y expuesto como
   `avatar-face render "<texto>"`, con el filtro RF-09 aplicado antes de
   dibujar. Medido: **~11 ms por avatar de 256 px y cero pesos**, frente a los
-  4.46 s con imagen inservible del estudiante cuantizado. Muestras en
-  `artifacts/render-demo/`.
+  4.46 s con imagen inservible del estudiante cuantizado.
+- vocabulario y trazado ampliados el 2026-08-20 tras el rechazo del usuario
+  («no pueden mandar un mamarracho»; el avatar sustituye a una foto de perfil):
+  **17 atributos y 13,226,976,000,000 combinaciones** —se añaden cejas, nariz,
+  vello facial, gafas independientes, pendientes, pecas, prenda y color de
+  prenda; se amplían pelo a 12 estilos y 10 colores, piel a 9 tonos, ojos a 6
+  colores y 5 formas, expresión a 6 y fondo a 8—. El trazado pasa a splines
+  Catmull-Rom y arcos elípticos en
+  `infrastructure/rendering/{geometry,palette,avatar_renderer}.py`. Galería de
+  12 personas distintas en `artifacts/render-demo/galeria.png`.
 
 En curso:
 

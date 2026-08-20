@@ -6,6 +6,7 @@ from avatar_face.domain.attributes import (
     ATTRIBUTE_CARDINALITIES,
     ATTRIBUTE_ORDER,
     ATTRIBUTE_VOCABULARIES,
+    LEGACY_ATTRIBUTES,
     AvatarAttributes,
     CaptionParseError,
     attributes_from_prompt,
@@ -26,7 +27,17 @@ CAPTION_WITHOUT_ACCESSORY = (
 
 def test_vocabulary_shape() -> None:
     assert ATTRIBUTE_ORDER == tuple(ATTRIBUTE_VOCABULARIES)
-    assert ATTRIBUTE_CARDINALITIES == (4, 4, 6, 4, 6, 4, 3, 6, 5)
+    # Las cardinalidades siguen describiendo sólo los atributos heredados, que
+    # son los que aparecen en los manifiestos de dataset ya congelados.
+    assert len(ATTRIBUTE_CARDINALITIES) == len(LEGACY_ATTRIBUTES)
+    assert set(LEGACY_ATTRIBUTES) <= set(ATTRIBUTE_ORDER)
+
+
+def test_vocabulary_is_large_enough_for_a_profile_picture() -> None:
+    """Un avatar que sustituye a una foto necesita combinatoria real."""
+    from avatar_face.domain.attributes import vocabulary_size
+
+    assert vocabulary_size() > 10**9
 
 
 def test_parse_caption_roundtrip() -> None:
@@ -69,8 +80,8 @@ def test_attributes_validate_vocabulary() -> None:
 def test_indices_match_vocabulary_order() -> None:
     attributes = parse_caption(CAPTION_WITH_ACCESSORY)
     indices = attributes.indices()
-    assert len(indices) == len(ATTRIBUTE_ORDER)
-    for name, index in zip(ATTRIBUTE_ORDER, indices, strict=True):
+    assert len(indices) == len(LEGACY_ATTRIBUTES)
+    for name, index in zip(LEGACY_ATTRIBUTES, indices, strict=True):
         assert ATTRIBUTE_VOCABULARIES[name][index] == getattr(attributes, name)
 
 

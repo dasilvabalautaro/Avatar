@@ -84,7 +84,35 @@ def test_render_command_rejects_minors(tmp_path: Path) -> None:
     assert not output.exists()
 
 
+def test_new_attributes_are_drawable() -> None:
+    """Cada valor de los atributos del ADR 0012 debe alterar el dibujo."""
+    renderer = FlatVectorAvatarRenderer(image_size=64)
+    reference = renderer.render(BASE).tobytes()
+    for name in ("facial_hair", "glasses", "earrings", "freckles", "clothing", "brow_style"):
+        for value in ATTRIBUTE_VOCABULARIES[name]:
+            image = renderer.render(BASE.with_values(**{name: value}))
+            if value not in {"none", getattr(BASE, name)}:
+                assert image.tobytes() != reference, f"{name}={value} no cambió el dibujo"
+
+
+def test_accessory_and_explicit_attribute_agree() -> None:
+    """El atributo heredado `accessory` sigue activando gafas y pendientes."""
+    legacy = BASE.with_values(accessory="round glasses")
+    assert legacy.effective_glasses == "round"
+    assert BASE.with_values(glasses="round").effective_glasses == "round"
+    renderer = FlatVectorAvatarRenderer(image_size=64)
+    assert renderer.render(legacy).tobytes() != renderer.render(BASE).tobytes()
+
+
 def test_free_text_reaches_the_renderer() -> None:
-    attributes = attributes_from_text("confident adult, square face, deep skin, sand background")
+    attributes = attributes_from_text(
+        "serious adult, square face, deep skin, full beard, thick brows, wide nose, "
+        "rectangular glasses, charcoal hoodie, slate background"
+    )
+    assert attributes.facial_hair == "full beard"
+    assert attributes.brow_style == "thick"
+    assert attributes.nose_style == "wide"
+    assert attributes.glasses == "rectangular"
+    assert attributes.clothing == "hoodie"
     image = FlatVectorAvatarRenderer(image_size=64).render(attributes)
     assert image.size == (64, 64)

@@ -27,7 +27,7 @@ from onnxruntime.quantization import (
 from onnxruntime.quantization.shape_inference import quant_pre_process
 from PIL import Image
 
-from avatar_face.domain.attributes import ATTRIBUTE_ORDER, AvatarAttributes
+from avatar_face.domain.attributes import LEGACY_ATTRIBUTES, AvatarAttributes
 
 DDIM_STEPS = 8
 
@@ -61,7 +61,7 @@ class StudentCalibrationReader(CalibrationDataReader):
                 pixels = np.asarray(image.convert("RGB"), dtype=np.float32)
             x0 = (pixels / 127.5 - 1.0).transpose(2, 0, 1)[None]
             attributes = AvatarAttributes(
-                **{k: record["attributes"][k] for k in ATTRIBUTE_ORDER}
+                **{k: record["attributes"][k] for k in LEGACY_ATTRIBUTES}
             ).indices()
             t = float(grid[index % DDIM_STEPS])
             ab = cosine_alpha_bar(t)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from avatar_face.domain.attributes import ATTRIBUTE_ORDER, parse_caption
+from avatar_face.domain.attributes import LEGACY_ATTRIBUTES, parse_caption
 from avatar_face.domain.distill import build_distill_captions, distill_captions_payload
 from avatar_face.presentation.cli import main
 
@@ -20,7 +20,8 @@ def test_build_is_deterministic() -> None:
 def test_pairs_are_balanced_and_parseable() -> None:
     pairs = build_distill_captions(64, 42)
     expressions = [pair.attributes.expression for pair in pairs]
-    assert all(expressions.count(value) == 16 for value in set(expressions))
+    counts = {value: expressions.count(value) for value in set(expressions)}
+    assert max(counts.values()) - min(counts.values()) <= 1
     for pair in pairs[:8]:
         assert parse_caption(pair.caption) == pair.attributes
         assert "of an adult" in pair.caption
@@ -44,7 +45,7 @@ def test_payload_schema() -> None:
     assert payload["samples"] == 32
     pairs = payload["pairs"]
     assert isinstance(pairs, list)
-    assert set(pairs[0]["attributes"]) == set(ATTRIBUTE_ORDER)
+    assert set(pairs[0]["attributes"]) == set(LEGACY_ATTRIBUTES)
     splits = payload["splits"]
     assert isinstance(splits, dict)
     assert sum(splits.values()) == 32

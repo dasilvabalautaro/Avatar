@@ -38,7 +38,7 @@ from pathlib import Path
 import torch
 from PIL import Image
 
-from avatar_face.domain.attributes import ATTRIBUTE_ORDER, AvatarAttributes
+from avatar_face.domain.attributes import LEGACY_ATTRIBUTES, AvatarAttributes
 from avatar_face.infrastructure.training.student_unet import StudentUNet, StudentUNetConfig
 
 CONTROL_SAMPLES = 8
@@ -66,7 +66,7 @@ def load_split(dataset_dir: Path, split: str) -> tuple[torch.Tensor, torch.Tenso
                 bytearray(image.convert("RGB").tobytes()), dtype=torch.uint8
             ).reshape(image.height, image.width, 3)
         images.append(array.permute(2, 0, 1))
-        attrs = AvatarAttributes(**{k: record["attributes"][k] for k in ATTRIBUTE_ORDER})
+        attrs = AvatarAttributes(**{k: record["attributes"][k] for k in LEGACY_ATTRIBUTES})
         attributes.append(torch.tensor(attrs.indices(), dtype=torch.long))
     return torch.stack(images), torch.stack(attributes), records
 
