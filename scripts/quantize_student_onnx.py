@@ -17,7 +17,13 @@ import math
 from pathlib import Path
 
 import numpy as np
-from onnxruntime.quantization import CalibrationDataReader, QuantFormat, QuantType, quantize_static
+from onnxruntime.quantization import (
+    CalibrationDataReader,
+    CalibrationMethod,
+    QuantFormat,
+    QuantType,
+    quantize_static,
+)
 from onnxruntime.quantization.shape_inference import quant_pre_process
 from PIL import Image
 
@@ -81,6 +87,28 @@ def main() -> None:
     parser.add_argument("--dataset-dir", type=Path, default=Path("data/distill-teacher-v1"))
     parser.add_argument("--calibration-samples", type=int, default=64)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--keep-fp32",
+        default="",
+        help="patrones de nombre de nodo que NO se cuantizan, separados por comas "
+        "(cuantización selectiva del ADR 0006; la vía de condicionamiento pesa poco "
+        "en cómputo y mucho en precisión)",
+    )
+    parser.add_argument(
+        "--calibrate-method",
+        choices=("minmax", "entropy", "percentile"),
+        default="minmax",
+        help="MinMax deja que un valor atípico fije la escala; percentil y entropía "
+        "la recortan y conservan resolución en el rango útil",
+    )
+    parser.add_argument(
+        "--activation-bits",
+        type=int,
+        choices=(8, 16),
+        default=8,
+        help="16 bits en activaciones conserva precisión en difusores pequeños, "
+        "a costa de kernels menos optimizados",
+    )
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
@@ -89,16 +117,36 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     preprocessed = args.output.with_name(args.output.stem + "-preprocessed.onnx")
     quant_pre_process(input_model=args.source, output_model_path=preprocessed)
+    patterns = [p.strip() for p in args.keep_fp32.split(",") if p.strip()]
+    excluded: list[str] = []
+    if patterns:
+        import onnx
+
+        graph = onnx.load(str(preprocessed)).graph
+        excluded = [
+            node.name
+            for node in graph.node
+            if node.name and any(pattern in node.name for pattern in patterns)
+        ]
+        print(f"nodos en fp32: {len(excluded)} de {len(graph.node)}")
     quantize_static(
+        nodes_to_exclude=excluded,
         model_input=preprocessed,
         model_output=args.output,
         calibration_data_reader=StudentCalibrationReader(
             args.dataset_dir, args.calibration_samples, args.seed
         ),
         quant_format=QuantFormat.QDQ,
-        activation_type=QuantType.QUInt8,
+        activation_type=(
+            QuantType.QUInt16 if args.activation_bits == 16 else QuantType.QUInt8
+        ),
         weight_type=QuantType.QInt8,
         per_channel=True,
+        calibrate_method={
+            "minmax": CalibrationMethod.MinMax,
+            "entropy": CalibrationMethod.Entropy,
+            "percentile": CalibrationMethod.Percentile,
+        }[args.calibrate_method],
     )
     preprocessed.unlink(missing_ok=True)
     payload = {
@@ -110,7 +158,11 @@ def main() -> None:
         "output_bytes": args.output.stat().st_size,
         "calibration_samples": args.calibration_samples,
         "quant_format": "QDQ",
+        "fp32_nodes": len(excluded),
+        "keep_fp32_patterns": patterns,
         "per_channel": True,
+        "calibrate_method": args.calibrate_method,
+        "activation_bits": args.activation_bits,
     }
     print(json.dumps(payload, indent=2, ensure_ascii=False))
 

@@ -385,6 +385,9 @@ class MainActivity : Activity() {
             STUDENT_MODEL,
             "avatarface-student.onnx",
             "avatarface-student-lite-int8.onnx",
+            "avatarface-student-lite-final-int8.onnx",
+            "avatarface-student-lite-fp32.onnx",
+            "avatarface-student-lite-a16.onnx",
             "avatarface-student-lite24-int8.onnx",
         )
         // Estudiante del ADR 0010: un paso del U-Net; la app ejecuta la
@@ -395,7 +398,7 @@ class MainActivity : Activity() {
         private const val RESULT_FILE = "benchmark-result.json"
         private const val DEFAULT_RUNS = 5
         private const val MAX_RUNS = 50
-        private const val CPU_THREADS = 4
+        private const val CPU_THREADS = 6
         private const val MAXIMUM_TOKENS = 16
         private const val LATENT_CHANNELS = 4
         private const val LATENT_SIZE = 8

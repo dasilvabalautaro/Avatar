@@ -225,11 +225,34 @@ Completado:
   `--attention-resolutions` y `--ddim-steps`, y el APK acepta la firma del
   estudiante con los modelos de medición como assets.
 
+- **compuerta del ADR 0011 superada** (2026-08-20): estudiante ligero de
+  7,498,787 parámetros entrenado con `vpred` (50,000 pasos, pérdida final
+  0.020186) — **8/8 rostros válidos y 8/8 adultos con 4 pasos DDIM**, fondo
+  8/8, piel 8/8, pelo 7/8. Con 3 pasos también salen rostros válidos pero se
+  pierden detalles (gafas de `avatar-00031`)
+  (`docs/experiments/student-lite-2026-08-20.md`).
+- ajuste de hilos medido: el arnés usaba 4 y el MT6769 tiene 8; **6 es el
+  óptimo** (1277 → 1212 → 1114 ms). El APK queda con `CPU_THREADS = 6`.
+- **muro de cuantización** documentado con medición en dispositivo: la única
+  variante que cumple RNF-03 es INT8 de 8 bits (1114 ms/paso → **4.46 s**),
+  pero degrada un 24.5 % y **produce ruido**. Descartadas por medición dos
+  hipótesis: no es la vía de condicionamiento (selectiva en fp32: 25.5 %) ni
+  sólo la calibración (percentil: 17.7 %). Subir las activaciones a 16 bits
+  sí corrige la calidad (6.2 %, rostro válido) pero cuesta 3405 ms/paso
+  —más lento que fp32— porque ONNX Runtime carece de kernels de 16 bits en
+  CPU ARM. FP32 es correcto pero tarda 11.05 s. Tamaño y memoria cumplen con
+  holgura en todas las variantes (8–30 MB de 250 MB; 0.34–0.47 GiB de 1.0 GB).
+
 En curso:
 
-- Fase 3 — **entrenamiento del estudiante ligero (ADR 0011) pendiente de
-  contratar GPU**. Todo el trabajo local está hecho y el dataset ya está
-  congelado (no se regenera). Comando exacto en la próxima tarea.
+- Fase 3 — **decisión del usuario pendiente**. Calidad, tamaño y memoria están
+  resueltos; falta cerrar **2.2×** de latencia con calidad preservada
+  (11.05 s en fp32 frente a 5 s). Palanca recomendada: **resolución interna de
+  128 px con reescalado a 256** (el coste lo dominan las activaciones, no los
+  pesos; estimado ~2.8 s en fp32, sin cuantizar; ~3–4 h de GPU). Alternativas:
+  QAT para rescatar el INT8 de 4.46 s, o 2 pasos en fp32 (5.5 s, insuficiente
+  y peor calidad). No hay trabajo de GPU en curso: la instancia puede
+  destruirse (todos los artefactos están en local con hashes).
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -237,25 +260,23 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Contratar una RTX 4090 en Vast y entrenar el **estudiante ligero** del
-> ADR 0011. El dataset ya está congelado y **no se regenera**; sólo hay que
-> restaurarlo. Secuencia: `scripts/bootstrap-vast.sh`, subir por `scp` el
-> paquete `transfer/avatarface-distill-teacher-v1.tar` (154.6 MB, por debajo
-> del umbral de 200 MB de subida) y su hash, y lanzar:
+> **Decisión del usuario, a registrar en un ADR nuevo.** El estudiante ligero
+> supera la compuerta de calidad y cumple tamaño y memoria con holgura; lo que
+> falta es cerrar 2.2× de latencia sin perder calidad (fp32: 11.05 s frente a
+> los 5 s de RNF-03). La cuantización posterior al entrenamiento está
+> **descartada con medición**: 8 bits produce ruido y 16 bits es más lento que
+> fp32 (`docs/experiments/student-lite-2026-08-20.md`).
 >
-> ```bash
-> python scripts/train_student.py --root /workspace/AvatarFace \
->   --dataset-dir data/distill-teacher-v1 --formulation vpred \
->   --base-channels 32 --attention-resolutions 16 --ddim-steps 4 \
->   --batch-size 32 --sample-every 2500 --output artifacts/student-lite-1
-> ```
+> Opción recomendada: **reentrenar a 128 px de resolución interna con
+> reescalado a 256** —el coste móvil lo dominan las activaciones, así que
+> dividir por cuatro los píxeles debería dar ~2.8 s en fp32, con margen y sin
+> cuantizar; el arte vectorial plano tolera bien el reescalado—. Exige un ADR
+> con su presupuesto (~3–4 h de GPU) y reutiliza la release congelada
+> `avatarface-distill-teacher` v1.0.0, que **no se regenera**.
 >
-> Estimado 4–6 h (~2–3 USD). Al terminar: bajar checkpoint y muestras,
-> evaluar la compuerta (≥ 6/8 rostros válidos y 8/8 adultos, con muestras de
-> **4 pasos**), exportar a ONNX, cuantizar (selectiva si RNF-06 lo exige,
-> ADR 0006) y medir en el TECNO con
-> `avatar-face benchmark-android --serial 14254155BM000874`. El presupuesto
-> móvil de esta arquitectura ya está medido: 4.8 s con 4 pasos.
+> Alternativas: QAT (rescataría el INT8 de 4.46 s, pero exige implementación
+> nueva) o aceptar 2 pasos en fp32 (5.5 s, sigue fuera y con peor calidad).
+> No pagar GPU hasta tener la decisión.
 
 ## 2. Repositorio y entorno
 
