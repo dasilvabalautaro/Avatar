@@ -74,6 +74,35 @@ Frente a los requisitos no funcionales, medidos y no estimados:
   camino de inferencia.
 - El ADR 0006 (cuantización selectiva) y el pipeline ONNX quedan sin uso en
   el camino del producto; se conservan para el registro.
+- El estilo es un rasgo de producto, no un detalle: el avatar sustituye a una
+  foto de perfil en una app que promete privacidad y ausencia de acoso
+  comercial, así que la persona tiene que sentirse tranquila con su
+  representación o la descartará. De ahí las reglas de estilo del apartado
+  siguiente.
 - Trabajo pendiente derivado: llevar el dibujo a la app Android (Kotlin), ya
   sea reimplementando el trazado con las primitivas de Canvas o generando el
   avatar en el lado nativo con la misma tabla de coordenadas.
+
+## Reglas de estilo (revisión del 2026-08-21)
+
+Salieron de comparar los renders con el ojo puesto en «¿me pondría esto como
+foto de perfil?». Cualquier cambio de coordenadas debe respetarlas y
+comprobarse con `python scripts/render_gallery.py`.
+
+1. **Sin sombreado lateral en el rostro.** La sombra de mejilla que había
+   cruzaba la cara con un borde duro y se leía como una mancha. La única
+   sombra admitida es la de contacto bajo el mentón, muy tenue.
+2. **Nada de negro puro en los rasgos.** Cejas y pestañas se derivan del color
+   del pelo; el negro puro endurece el gesto y produce caras severas.
+3. **La nariz es la base, no el tabique.** Una media luna fina bajo el
+   tabique; una forma grande en mitad del rostro parece una mancha y una línea
+   suelta un arañazo.
+4. **Las orejas apenas asoman.** Sobresalir más de cuatro píxeles a 256 px las
+   convierte en bultos.
+5. **Un polígono se recorre en un solo sentido.** Saltar de un lado al otro lo
+   cierra sobre sí mismo: así aparecieron la muesca de la coronilla y la barba
+   con forma de bufanda.
+6. **Capas separadas para barba, boca y bigote**, en ese orden, para que los
+   labios queden visibles y el bigote se apoye sobre ellos.
+7. **Las siluetas deben distinguirse entre sí.** Si todas las formas de cara
+   se parecen, nadie encuentra la suya.

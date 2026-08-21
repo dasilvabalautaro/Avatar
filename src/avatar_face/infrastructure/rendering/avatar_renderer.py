@@ -61,12 +61,12 @@ class FaceShape:
 
 
 FACE_SHAPES: dict[str, FaceShape] = {
-    "oval": FaceShape(temple=57, cheek=63, jaw=51, chin=25, chin_y=216, top=50),
-    "round": FaceShape(temple=61, cheek=67, jaw=61, chin=33, chin_y=207, top=54),
-    "square": FaceShape(temple=62, cheek=65, jaw=63, chin=41, chin_y=209, top=52),
-    "heart": FaceShape(temple=63, cheek=65, jaw=45, chin=19, chin_y=214, top=52),
-    "long": FaceShape(temple=54, cheek=59, jaw=49, chin=25, chin_y=226, top=44),
-    "diamond": FaceShape(temple=51, cheek=68, jaw=47, chin=23, chin_y=216, top=54),
+    "oval": FaceShape(temple=56, cheek=62, jaw=50, chin=24, chin_y=216, top=50),
+    "round": FaceShape(temple=62, cheek=69, jaw=64, chin=37, chin_y=205, top=55),
+    "square": FaceShape(temple=63, cheek=66, jaw=66, chin=48, chin_y=208, top=52),
+    "heart": FaceShape(temple=64, cheek=66, jaw=42, chin=14, chin_y=215, top=52),
+    "long": FaceShape(temple=52, cheek=56, jaw=47, chin=23, chin_y=231, top=42),
+    "diamond": FaceShape(temple=47, cheek=70, jaw=43, chin=20, chin_y=217, top=55),
 }
 
 
@@ -101,11 +101,13 @@ def _hair_cap(
         (CENTER, shape.top + 30), width, 30 + volume + peak, 180, 360, steps=18
     )
     points: list[Point] = [
-        (CENTER - width + 7, side_y),
-        (CENTER - width - 1, side_y - 28),
+        (CENTER - width + 13, side_y),
+        (CENTER - width + 2, side_y - 22),
+        (CENTER - width - 1, side_y - 44),
         *crown,
-        (CENTER + width + 1, side_y - 28),
-        (CENTER + width - 7, side_y),
+        (CENTER + width + 1, side_y - 44),
+        (CENTER + width - 2, side_y - 22),
+        (CENTER + width - 13, side_y),
         (CENTER + width - 6, hairline + 12),
         (CENTER + width * 0.62, hairline),
         (CENTER, hairline - 7),
@@ -138,8 +140,8 @@ def _draw_hair_back(
             (CENTER + shape.temple + 14, shape.top + 40),
             (CENTER + shape.cheek + 16, 148.0),
             (CENTER + shape.jaw + 16, 196.0),
-            (CENTER + 30, 206.0),
-            (CENTER, 202.0),
+            (CENTER + 34, 208.0),
+            (CENTER, 210.0),
         ]
         fill(catmull_rom([*right, *mirror(right)[1:-1]], samples=10), dark)
     elif style == "afro":
@@ -327,11 +329,11 @@ def _draw_mustache(
 def _eye_geometry(shape: str) -> tuple[float, float, float, float]:
     """Semiejes de la abertura, radio del iris y descenso del párpado."""
     return {
-        "almond": (18.0, 10.5, 8.5, 0.0),
-        "round": (15.5, 14.0, 9.5, 0.0),
-        "narrow": (18.5, 7.5, 8.0, 0.0),
-        "wide": (19.5, 13.0, 9.5, 0.0),
-        "hooded": (18.0, 11.0, 8.5, 4.0),
+        "almond": (17.5, 10.0, 8.0, 0.0),
+        "round": (15.0, 12.2, 8.6, 0.0),
+        "narrow": (18.0, 7.2, 7.6, 0.0),
+        "wide": (19.0, 12.5, 9.0, 0.0),
+        "hooded": (17.5, 10.5, 8.0, 3.5),
     }[shape]
 
 
@@ -395,38 +397,23 @@ class FlatVectorAvatarRenderer:
 
         shape = FACE_SHAPES[attributes.face_shape]
         skin = hex_to_rgb(SKIN_TONES[attributes.skin_tone])
-        skin_shadow = shade(skin, -0.09)
+        skin_shadow = shade(skin, -0.11)
         hair = hex_to_rgb(HAIR_COLORS[attributes.hair_color])
         cloth = hex_to_rgb(CLOTHING_COLORS[attributes.clothing_color])
 
         _draw_hair_back(fill, shape, attributes, hair)
         self._draw_body(fill, shape, attributes, cloth, skin, skin_shadow)
         for sign in (-1.0, 1.0):
-            cx = CENTER + sign * (shape.cheek - 1)
+            cx = CENTER + sign * (shape.cheek - 3)
             fill(
                 catmull_rom(
-                    [(cx - 9, 144.0), (cx, 132.0), (cx + 9, 148.0), (cx, 168.0)], samples=10
+                    [(cx - 7, 145.0), (cx, 136.0), (cx + 7, 149.0), (cx, 164.0)], samples=10
                 ),
                 skin,
             )
         fill(face_outline(shape), skin)
-        fill(
-            catmull_rom(
-                [
-                    (CENTER - shape.temple + 2, 96.0),
-                    (CENTER - shape.cheek + 1, 140.0),
-                    (CENTER - shape.jaw + 2, 180.0),
-                    (CENTER - shape.chin, shape.chin_y - 10),
-                    (CENTER - shape.jaw + 17, 176.0),
-                    (CENTER - shape.cheek + 19, 136.0),
-                ],
-                samples=10,
-            ),
-            skin_shadow,
-        )
-
         self._draw_eyes(fill, draw, box, attributes)
-        self._draw_nose(fill, stroke, attributes, skin_shadow)
+        self._draw_nose(fill, attributes, skin, skin_shadow)
         _draw_beard(fill, shape, attributes, hair, skin)
         self._draw_mouth(fill, attributes)
         _draw_mustache(fill, attributes, hair, skin)
@@ -447,12 +434,30 @@ class FlatVectorAvatarRenderer:
         skin_shadow: Rgb,
     ) -> None:
         fill(
-            [
-                (CENTER - 23, shape.chin_y - 26),
-                (CENTER + 23, shape.chin_y - 26),
-                (CENTER + 25, shape.chin_y + 26),
-                (CENTER - 25, shape.chin_y + 26),
-            ],
+            catmull_rom(
+                [
+                    (CENTER - 24, shape.chin_y - 30),
+                    (CENTER - 26, shape.chin_y + 18),
+                    (CENTER - 30, shape.chin_y + 34),
+                    (CENTER + 30, shape.chin_y + 34),
+                    (CENTER + 26, shape.chin_y + 18),
+                    (CENTER + 24, shape.chin_y - 30),
+                ],
+                samples=8,
+            ),
+            skin,
+        )
+        # Sombra de contacto: sólo bajo el mentón, que es donde el ojo la espera.
+        fill(
+            catmull_rom(
+                [
+                    (CENTER - 25, shape.chin_y - 6),
+                    (CENTER, shape.chin_y + 13),
+                    (CENTER + 25, shape.chin_y - 6),
+                    (CENTER, shape.chin_y + 1),
+                ],
+                samples=10,
+            ),
             skin_shadow,
         )
         garment = attributes.clothing
@@ -515,71 +520,74 @@ class FlatVectorAvatarRenderer:
         half_w, half_h, iris_r, hood = _eye_geometry(attributes.eye_shape)
         iris = hex_to_rgb(EYE_COLORS[attributes.eye_color])
         dark = hex_to_rgb(LINE)
+        brow = mix(hex_to_rgb(HAIR_COLORS[attributes.hair_color]), dark, 0.25)
         white = hex_to_rgb(SCLERA)
         for sign in (-1.0, 1.0):
             cx = CENTER + sign * EYE_DX
             draw.ellipse(box(cx - half_w, EYE_Y - half_h, cx + half_w, EYE_Y + half_h), fill=white)
             draw.ellipse(box(cx - iris_r, EYE_Y - iris_r, cx + iris_r, EYE_Y + iris_r), fill=iris)
-            draw.ellipse(box(cx - 4.2, EYE_Y - 4.2, cx + 4.2, EYE_Y + 4.2), fill=dark)
-            draw.ellipse(box(cx + 1.5, EYE_Y - 6.5, cx + 6.5, EYE_Y - 1.5), fill=white)
+            draw.ellipse(box(cx - 3.9, EYE_Y - 3.9, cx + 3.9, EYE_Y + 3.9), fill=dark)
+            draw.ellipse(box(cx + 1.8, EYE_Y - 6.2, cx + 5.6, EYE_Y - 2.4), fill=white)
             # Párpado superior: cierra la forma y da carácter a la mirada.
             fill(
                 catmull_rom(
                     [
-                        (cx - half_w - 1, EYE_Y - half_h * 0.35),
-                        (cx, EYE_Y - half_h - 1.5 + hood),
-                        (cx + half_w + 1, EYE_Y - half_h * 0.35),
-                        (cx, EYE_Y - half_h + 4.0 + hood),
+                        (cx - half_w - 0.5, EYE_Y - half_h * 0.45),
+                        (cx, EYE_Y - half_h - 1.0 + hood),
+                        (cx + half_w + 0.5, EYE_Y - half_h * 0.45),
+                        (cx, EYE_Y - half_h + 1.9 + hood),
                     ],
                     samples=8,
                 ),
                 dark,
             )
-            fill(_brow_points(attributes.brow_style, sign), dark)
+            fill(_brow_points(attributes.brow_style, sign), brow)
 
     @staticmethod
     def _draw_nose(
         fill: Painter,
-        stroke: LinePainter,
         attributes: AvatarAttributes,
+        skin_base: Rgb,
         skin_shadow: Rgb,
     ) -> None:
         style = attributes.nose_style
         width, tip = {
-            "straight": (9.0, NOSE_BOTTOM),
-            "small": (7.5, NOSE_BOTTOM - 6),
-            "button": (9.5, NOSE_BOTTOM - 4),
-            "wide": (13.5, NOSE_BOTTOM),
-            "pointed": (7.0, NOSE_BOTTOM + 2),
+            "straight": (8.0, NOSE_BOTTOM),
+            "small": (6.5, NOSE_BOTTOM - 5),
+            "button": (9.0, NOSE_BOTTOM - 3),
+            "wide": (12.0, NOSE_BOTTOM),
+            "pointed": (6.5, NOSE_BOTTOM + 1),
         }[style]
-        if style == "button":
+        soft = mix(skin_shadow, skin_base, 0.3)
+        # La nariz se resuelve como la base: una media luna fina bajo el tabique.
+        # Una forma grande en mitad del rostro se lee como una mancha, y una
+        # línea suelta como un arañazo.
+        depth = 6.0 if style in {"button", "wide"} else 5.0
+        fill(
+            catmull_rom(
+                [
+                    (CENTER - width, tip - 5),
+                    (CENTER, tip + depth * 0.55),
+                    (CENTER + width, tip - 5),
+                    (CENTER, tip - depth * 0.35),
+                ],
+                samples=12,
+            ),
+            soft,
+        )
+        if style == "pointed":
             fill(
                 catmull_rom(
                     [
-                        (CENTER - width, tip - 3),
-                        (CENTER, tip - 11),
-                        (CENTER + width, tip - 3),
-                        (CENTER, tip + 4),
+                        (CENTER - 2.2, NOSE_TOP + 4),
+                        (CENTER + 2.2, NOSE_TOP + 4),
+                        (CENTER + 2.6, tip - 6),
+                        (CENTER - 2.6, tip - 6),
                     ],
-                    samples=10,
+                    samples=6,
                 ),
-                skin_shadow,
+                soft,
             )
-            return
-        stroke(
-            catmull_rom(
-                [
-                    (CENTER + 2.5, NOSE_TOP),
-                    (CENTER + 3.0, tip - 8),
-                    (CENTER - width * 0.5, tip),
-                    (CENTER - width, tip - 2),
-                ],
-                samples=8,
-                closed=False,
-            ),
-            skin_shadow,
-            3.4,
-        )
 
     @staticmethod
     def _draw_mouth(fill: Painter, attributes: AvatarAttributes) -> None:

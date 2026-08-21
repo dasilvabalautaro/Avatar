@@ -1,6 +1,6 @@
 # Handoff de AvatarFace
 
-Actualizado: 2026-08-20, zona horaria `America/La_Paz`.
+Actualizado: 2026-08-21, zona horaria `America/La_Paz`.
 
 Este documento es el punto de entrada obligatorio para retomar el proyecto en
 otra sesión. El estado descrito corresponde al commit que contiene este archivo;
@@ -265,7 +265,17 @@ Completado:
   colores y 5 formas, expresión a 6 y fondo a 8—. El trazado pasa a splines
   Catmull-Rom y arcos elípticos en
   `infrastructure/rendering/{geometry,palette,avatar_renderer}.py`. Galería de
-  12 personas distintas en `artifacts/render-demo/galeria.png`.
+  12 personas distintas en `artifacts/render-demo/galeria.png`, reproducible
+  con `python scripts/render_gallery.py`.
+- pulido de estilo (2026-08-21) tras la revisión del usuario, que señaló
+  «sombras raras en el rostro»: se elimina el sombreado lateral de mejilla
+  (borde duro que se leía como mancha) y queda sólo la sombra de contacto bajo
+  el mentón; cejas y pestañas pasan a derivarse del color del pelo en vez de
+  negro puro, que endurecía el gesto; la nariz se resuelve como media luna
+  fina bajo el tabique; las orejas dejan de sobresalir; el cuello pasa a
+  silueta suave; y las seis formas de cara se separan lo bastante para
+  distinguirse. Las reglas quedan fijadas en el ADR 0012, apartado «Reglas de
+  estilo».
 
 En curso:
 
@@ -288,9 +298,11 @@ Próxima tarea exacta:
 > RNF-06 dejan de tener sentido tal como están escritos, porque ya no hay
 > modelo ni cuantización en el camino de inferencia (ADR 0012).
 >
-> Trabajo de pulido opcional del dibujo, con las muestras del maestro como
-> referencia: la boca «calm» sale como un óvalo rojo algo plano y la nariz es
-> muy sutil.
+> Pulido pendiente del dibujo, por orden de lo que más se nota: los rizos del
+> estilo `curly` se leen como bultos separados en vez de rizos; la barba corta
+> sobre cabeza calva recuerda a una correa de barbilla; y algunos casquetes de
+> pelo aún tienen aire de gorro. Revisar siempre con
+> `python scripts/render_gallery.py`.
 
 ## 2. Repositorio y entorno
 

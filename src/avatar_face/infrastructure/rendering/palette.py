@@ -76,6 +76,6 @@ CLOTHING_COLORS: dict[str, str] = {
 
 LINE = "#2A2229"
 SCLERA = "#FDFBF7"
-LIP = "#C0574F"
+LIP = "#B9695F"
 TEETH = "#FDFBF7"
 GOLD = "#EEBC49"
