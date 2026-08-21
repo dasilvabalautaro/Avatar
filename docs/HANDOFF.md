@@ -320,11 +320,36 @@ Completado:
   tamaño de pantalla el spline sobrepasaba en cada alternancia y el rizo se
   veía como una corona de picos.
 
+- **kit de integración entregado** (2026-08-21):
+  `transfer/avatarface-render-kit.zip` (737,350 bytes, SHA-256
+  `10057e6841e785568b40d62b8fb311cd4d45f5e099785cb58b54cc52017d32f9`) con todo
+  lo necesario para llevar el generador a otro proyecto: implementación en
+  Kotlin y en Python, vocabulario completo, casos de referencia del parser,
+  galería y capturas del dispositivo, scripts de verificación, y documentación
+  de la decisión, el vocabulario, las doce reglas de estilo y el método de
+  verificación de paridad. **Se reconstruye, no se versiona**: 
+  `python scripts/build_render_kit.py` lo regenera desde el código y los
+  documentos de `docs/render-kit/`, así que nunca queda desincronizado.
+  Verificado extrayéndolo en limpio: reproduce la galería de referencia con
+  0.00 % de diferencia y el filtro RF-09 funciona aislado.
+- **limpieza de la máquina local** (2026-08-21): liberados **35 GB**. Se
+  borraron los pesos de Würstchen (32 GB, recuperables con
+  `scripts/download-wuerstchen-weights.py` desde
+  `models/wuerstchen-v2/model-manifest.json`, que se conserva), los ONNX de
+  viabilidad y del estudiante (regenerables), los checkpoints de las vías
+  cerradas, los pilotos LoRA superados, el `data/distill-teacher-v1` extraído
+  y los modelos ONNX del APK, que el producto ya no usa.
+  **Se conserva lo irreemplazable**: el checkpoint LoRA escala-3 (el maestro,
+  12.7 MB), el de escala-4, el checkpoint del estudiante `vpred` que superó la
+  compuerta (836.7 MB, ~14 h de GPU), el `.tar` del dataset de destilación
+  (154.6 MB, hash verificado tras la limpieza) y todos los logs, muestras de
+  control y hashes de los experimentos.
+
 En curso:
 
-- Fase 4 — la pantalla existe y funciona; falta el acabado de producto:
-  selectores de atributos además del texto libre, guardar o entregar el PNG a
-  la aplicación anfitriona, y persistir el avatar elegido.
+- Fase 4 — el acabado de producto se hace en el proyecto **Nyx**, con el kit
+  entregado. Aquí queda la investigación del modelo y el mantenimiento del
+  generador de referencia.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -332,16 +357,22 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Acabado de producto sobre `AvatarActivity`: selectores de atributos junto al
-> texto libre, guardar el avatar y entregarlo a la aplicación anfitriona, y
-> persistir la elección entre sesiones.
+> No hay tarea en curso. El producto se integra en Nyx con
+> `transfer/avatarface-render-kit.zip`; aquí queda la referencia y la
+> investigación.
 >
-> **Tres implementaciones deben moverse juntas**: el trazado y el parser están
-> en Python y en Kotlin, y los casos de referencia se generan desde Python. Al
-> tocar cualquiera de los tres, ejecutar
-> `scripts/render-on-device.sh 14254155BM000874`, que regenera los assets,
-> compila, dibuja en el dispositivo y verifica **ambas** paridades. Respetar
-> las doce reglas de estilo del ADR 0012.
+> Para retomar la investigación del modelo hace falta GPU y, en la instancia:
+> descargar los pesos con `python scripts/download-wuerstchen-weights.py
+> --manifest models/wuerstchen-v2/model-manifest.json` (verifica SHA-256), y
+> subir `transfer/avatarface-distill-teacher-v1.tar` y el checkpoint maestro
+> `artifacts/lora-scale-3/pilot-checkpoint.pt`. Antes de pagar GPU, leer el
+> ADR 0012: la vía neuronal se cerró con medición y su reapertura necesita un
+> ADR nuevo que explique qué cambia respecto a lo ya descartado.
+>
+> Si se toca el dibujo, **tres implementaciones se mueven juntas** (Python,
+> Kotlin y los casos de referencia) y hay que rehacer el kit; el
+> procedimiento está en `docs/adr/0012-render-vectorial-sin-modelo-neuronal.md`
+> y en el propio kit (`docs/verificacion.md`).
 
 ## 2. Repositorio y entorno
 

@@ -20,6 +20,7 @@ downloads/
 artifacts/*
 !artifacts/.gitkeep
 transfer/*.tar
+transfer/*.zip
 transfer/*.tar.*
 transfer/SHA256SUMS*
 
