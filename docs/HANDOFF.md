@@ -274,8 +274,17 @@ Completado:
   negro puro, que endurecía el gesto; la nariz se resuelve como media luna
   fina bajo el tabique; las orejas dejan de sobresalir; el cuello pasa a
   silueta suave; y las seis formas de cara se separan lo bastante para
-  distinguirse. Las reglas quedan fijadas en el ADR 0012, apartado «Reglas de
-  estilo».
+  distinguirse.
+- segunda ronda de pulido (2026-08-21), a partir de la revisión de
+  `persona-06`: las orejas dejan de rematar en punta (parecían orejas de
+  elfo); el casquete gana patilla explícita, que evitaba un pincho sobre la
+  sien; el cuello de camisa deja de abrir una muesca oscura; y **pelo, orejas
+  y pendientes se apoyan en `face_half_width`**, que interpola el contorno
+  real, en vez de en anchuras fijas que los dejaban flotando sobre las
+  siluetas anchas. Además, `curly` y `afro` pasan a festonear el arco de la
+  coronilla —los rizos son el borde de una masa, no círculos pegados— y la
+  barba gana cuerpo en el mentón para no leerse como correa de barbilla.
+  Las diez reglas quedan fijadas en el ADR 0012, apartado «Reglas de estilo».
 
 En curso:
 
@@ -298,11 +307,11 @@ Próxima tarea exacta:
 > RNF-06 dejan de tener sentido tal como están escritos, porque ya no hay
 > modelo ni cuantización en el camino de inferencia (ADR 0012).
 >
-> Pulido pendiente del dibujo, por orden de lo que más se nota: los rizos del
-> estilo `curly` se leen como bultos separados en vez de rizos; la barba corta
-> sobre cabeza calva recuerda a una correa de barbilla; y algunos casquetes de
-> pelo aún tienen aire de gorro. Revisar siempre con
-> `python scripts/render_gallery.py`.
+> Pulido pendiente del dibujo, por orden de lo que más se nota: las solapas de
+> `collared shirt` son triángulos grandes y algo llamativos; las cabezas
+> calvas quedan muy abombadas; y las gafas resultan grandes en las siluetas
+> estrechas. Revisar siempre con `python scripts/render_gallery.py`, y
+> respetar las diez reglas de estilo del ADR 0012.
 
 ## 2. Repositorio y entorno
 

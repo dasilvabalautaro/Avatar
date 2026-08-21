@@ -70,6 +70,24 @@ FACE_SHAPES: dict[str, FaceShape] = {
 }
 
 
+def face_half_width(shape: FaceShape, y: float) -> float:
+    """Media anchura del rostro a la altura `y`, interpolando el contorno."""
+    anchors: list[tuple[float, float]] = [
+        (shape.top, 0.0),
+        (shape.top + 44, shape.temple),
+        (132.0, shape.cheek),
+        (176.0, shape.jaw),
+        (shape.chin_y - 12, shape.chin),
+        (shape.chin_y, 0.0),
+    ]
+    if y <= anchors[1][0]:
+        return shape.temple
+    for (y0, w0), (y1, w1) in zip(anchors, anchors[1:], strict=False):
+        if y0 <= y <= y1:
+            return w0 + (w1 - w0) * (y - y0) / (y1 - y0)
+    return shape.chin
+
+
 def face_outline(shape: FaceShape) -> list[Point]:
     """Contorno cerrado y suave del rostro, simétrico respecto al eje central."""
     right: list[Point] = [
@@ -94,27 +112,41 @@ def _hair_cap(
     un polígono que salta de un lado a otro se cierra sobre sí mismo y abre una
     muesca en la coronilla.
     """
-    width = shape.temple + 5
+    width = max(shape.temple, face_half_width(shape, side_y) * 0.94) + 5
     # La coronilla es un arco elíptico real: un polígono de puntos sueltos
     # producía una silueta de caja en vez de pelo.
     crown = ellipse_points(
         (CENTER, shape.top + 30), width, 30 + volume + peak, 180, 360, steps=18
     )
     points: list[Point] = [
-        (CENTER - width + 13, side_y),
-        (CENTER - width + 2, side_y - 22),
-        (CENTER - width - 1, side_y - 44),
+        (CENTER - width + 2, side_y),
+        (CENTER - width - 1, side_y - 40),
         *crown,
-        (CENTER + width + 1, side_y - 44),
-        (CENTER + width - 2, side_y - 22),
-        (CENTER + width - 13, side_y),
-        (CENTER + width - 6, hairline + 12),
+        (CENTER + width + 1, side_y - 40),
+        (CENTER + width - 2, side_y),
+        (CENTER + width - 12, side_y - 4),
+        (CENTER + width - 15, hairline + 14),
         (CENTER + width * 0.62, hairline),
         (CENTER, hairline - 7),
         (CENTER - width * 0.62, hairline),
-        (CENTER - width + 6, hairline + 12),
+        (CENTER - width + 15, hairline + 14),
+        (CENTER - width + 12, side_y - 4),
     ]
     return catmull_rom(points, samples=8)
+
+
+def _scalloped_crown(
+    shape: FaceShape, width: float, volume: float, lobes: int, depth: float
+) -> list[Point]:
+    """Arco de coronilla con lóbulos: da rizo sin recortar círculos sueltos."""
+    base = ellipse_points((CENTER, shape.top + 30), width, 30 + volume, 180, 360, steps=lobes * 2)
+    scalloped: list[Point] = []
+    for index, (x, y) in enumerate(base):
+        factor = 1.0 + (depth if index % 2 else -depth * 0.5)
+        scalloped.append(
+            (CENTER + (x - CENTER) * factor, (shape.top + 30) + (y - (shape.top + 30)) * factor)
+        )
+    return scalloped
 
 
 def _draw_hair_back(
@@ -145,9 +177,19 @@ def _draw_hair_back(
         ]
         fill(catmull_rom([*right, *mirror(right)[1:-1]], samples=10), dark)
     elif style == "afro":
+        base = ellipse_points(
+            (CENTER, shape.top + 36), shape.temple + 26, shape.temple + 29, 0, 360, steps=26
+        )
         fill(
-            ellipse_points(
-                (CENTER, shape.top + 36), shape.temple + 27, shape.temple + 30, 0, 360, steps=30
+            catmull_rom(
+                [
+                    (
+                        CENTER + (x - CENTER) * (1.06 if index % 2 else 0.98),
+                        (shape.top + 36) + (y - (shape.top + 36)) * (1.06 if index % 2 else 0.98),
+                    )
+                    for index, (x, y) in enumerate(base)
+                ],
+                samples=4,
             ),
             dark,
         )
@@ -189,18 +231,28 @@ def _draw_hair_front(
         fill(_hair_cap(shape, volume=15, side_y=104, hairline=96), hair)
         return
     if style == "curly":
-        fill(_hair_cap(shape, volume=14, side_y=142, hairline=100), hair)
-        for index, (cx, cy) in enumerate(
-            ellipse_points((CENTER, shape.top + 34), shape.temple + 6, 42, 186, 354, steps=8)
-        ):
-            radius = 15.0 if index % 2 else 12.0
-            fill(
-                catmull_rom(
-                    [(cx - radius, cy), (cx, cy - radius), (cx + radius, cy), (cx, cy + radius)],
-                    samples=10,
-                ),
-                hair if index % 2 else light,
-            )
+        width = max(shape.temple, face_half_width(shape, 142.0) * 0.94) + 5
+        crown = _scalloped_crown(shape, width, 13, lobes=10, depth=0.085)
+        fill(
+            catmull_rom(
+                [
+                    (CENTER - width + 2, 142.0),
+                    (CENTER - width - 1, 108.0),
+                    *crown,
+                    (CENTER + width + 1, 108.0),
+                    (CENTER + width - 2, 142.0),
+                    (CENTER + width - 12, 138.0),
+                    (CENTER + width - 15, 114.0),
+                    (CENTER + width * 0.62, 100.0),
+                    (CENTER, 93.0),
+                    (CENTER - width * 0.62, 100.0),
+                    (CENTER - width + 15, 114.0),
+                    (CENTER - width + 12, 138.0),
+                ],
+                samples=8,
+            ),
+            hair,
+        )
         return
     if style == "afro":
         fill(_hair_cap(shape, volume=10, side_y=140, hairline=104), hair)
@@ -281,11 +333,11 @@ def _draw_beard(
             (CENTER + shape.chin + 8, shape.chin_y - 10),
             (CENTER + shape.jaw + 1, 178.0),
             (CENTER + shape.cheek - 4, top),
-            (CENTER + shape.cheek - 17, top + 18),
+            (CENTER + shape.cheek - 22, top + 20),
             (CENTER + 31, MOUTH_Y - (16.0 if style == "full beard" else 2.0)),
-            (CENTER, MOUTH_Y + 13),
+            (CENTER, MOUTH_Y + 6),
             (CENTER - 31, MOUTH_Y - (16.0 if style == "full beard" else 2.0)),
-            (CENTER - shape.cheek + 17, top + 18),
+            (CENTER - shape.cheek + 22, top + 20),
         ]
         fill(catmull_rom(points, samples=8), color)
     elif style == "goatee":
@@ -404,13 +456,8 @@ class FlatVectorAvatarRenderer:
         _draw_hair_back(fill, shape, attributes, hair)
         self._draw_body(fill, shape, attributes, cloth, skin, skin_shadow)
         for sign in (-1.0, 1.0):
-            cx = CENTER + sign * (shape.cheek - 3)
-            fill(
-                catmull_rom(
-                    [(cx - 7, 145.0), (cx, 136.0), (cx + 7, 149.0), (cx, 164.0)], samples=10
-                ),
-                skin,
-            )
+            cx = CENTER + sign * (face_half_width(shape, 151.0) - 4)
+            fill(ellipse_points((cx, 151.0), 9.0, 14.0, 0, 360, steps=24), skin)
         fill(face_outline(shape), skin)
         self._draw_eyes(fill, draw, box, attributes)
         self._draw_nose(fill, attributes, skin, skin_shadow)
@@ -484,11 +531,20 @@ class FlatVectorAvatarRenderer:
         if garment == "v-neck":
             fill([(CENTER - 22, top_y - 1), (CENTER, top_y + 30), (CENTER + 22, top_y - 1)], skin)
         elif garment == "collared shirt":
-            highlight = shade(cloth, 0.22)
-            fill([(CENTER - 27, top_y - 2), (CENTER, top_y + 26), (CENTER - 5, top_y - 2)],
-                 highlight)
-            fill([(CENTER + 27, top_y - 2), (CENTER, top_y + 26), (CENTER + 5, top_y - 2)],
-                 highlight)
+            fill(
+                [(CENTER - 15, top_y - 4), (CENTER, top_y + 20), (CENTER + 15, top_y - 4)],
+                shade(cloth, -0.22),
+            )
+            highlight = shade(cloth, 0.2)
+            for sign in (-1.0, 1.0):
+                fill(
+                    [
+                        (CENTER + sign * 30, top_y - 6),
+                        (CENTER + sign * 2, top_y + 4),
+                        (CENTER + sign * 15, top_y + 24),
+                    ],
+                    highlight,
+                )
         elif garment == "hoodie":
             fill(
                 catmull_rom(
@@ -750,7 +806,7 @@ class FlatVectorAvatarRenderer:
             return
         gold = hex_to_rgb(GOLD)
         for sign in (-1.0, 1.0):
-            cx = CENTER + sign * (shape.cheek + 5)
+            cx = CENTER + sign * (face_half_width(shape, 168.0) + 6)
             if style == "studs":
                 draw.ellipse(box(cx - 5, 164, cx + 5, 174), fill=gold)
             else:

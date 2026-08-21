@@ -106,3 +106,12 @@ comprobarse con `python scripts/render_gallery.py`.
    labios queden visibles y el bigote se apoye sobre ellos.
 7. **Las siluetas deben distinguirse entre sí.** Si todas las formas de cara
    se parecen, nadie encuentra la suya.
+8. **Nada se coloca en coordenadas fijas si el rostro cambia de anchura.**
+   El pelo, las orejas y los pendientes se apoyan en `face_half_width`, que
+   interpola el contorno a la altura pedida; con anchuras fijas quedaban
+   flotando sobre las siluetas anchas, como pasaba en la forma `diamond`.
+9. **El rizo es el borde de una masa, no un montón de círculos.** Los estilos
+   `curly` y `afro` festonean el arco de la coronilla; recortar círculos
+   sueltos encima daba aspecto de bultos pegados.
+10. **La barba necesita cuerpo en el mentón.** Una banda estrecha siguiendo la
+    mandíbula se lee como una correa de barbilla, no como barba.
