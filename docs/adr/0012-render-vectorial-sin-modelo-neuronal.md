@@ -113,5 +113,12 @@ comprobarse con `python scripts/render_gallery.py`.
 9. **El rizo es el borde de una masa, no un montón de círculos.** Los estilos
    `curly` y `afro` festonean el arco de la coronilla; recortar círculos
    sueltos encima daba aspecto de bultos pegados.
-10. **La barba necesita cuerpo en el mentón.** Una banda estrecha siguiendo la
-    mandíbula se lee como una correa de barbilla, no como barba.
+10. **La barba necesita cuerpo en el mentón** y **bigote**. Una banda estrecha
+    siguiendo la mandíbula se lee como correa de barbilla, y sin bigote queda
+    con aire de barba de collar.
+11. **Los accesorios se dimensionan con el rostro.** La montura se calcula
+    desde el hueco entre el ojo y el borde del rostro (`face_half_width`); una
+    talla fija resulta enorme sobre las siluetas estrechas. La redonda se
+    dibuja algo menor a igual anchura, porque ocupa más superficie.
+12. **Una cabeza rapada necesita brillo de coronilla.** Sin él se lee como una
+    frente enorme, no como una calva.

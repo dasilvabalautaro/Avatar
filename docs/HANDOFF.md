@@ -284,7 +284,13 @@ Completado:
   siluetas anchas. Además, `curly` y `afro` pasan a festonear el arco de la
   coronilla —los rizos son el borde de una masa, no círculos pegados— y la
   barba gana cuerpo en el mentón para no leerse como correa de barbilla.
-  Las diez reglas quedan fijadas en el ADR 0012, apartado «Reglas de estilo».
+  Las reglas quedan fijadas en el ADR 0012, apartado «Reglas de estilo».
+- tercera ronda de pulido (2026-08-21): cuello de camisa discreto (las solapas
+  eran triángulos que parecían una pajarita), brillo de coronilla para que una
+  cabeza rapada no se lea como una frente enorme, monturas dimensionadas desde
+  el hueco entre el ojo y el borde del rostro —la redonda algo menor a igual
+  anchura— y bigote también en la barba corta y la incipiente, que sin él
+  quedaban con aire de barba de collar. Doce reglas de estilo en el ADR 0012.
 
 En curso:
 
@@ -307,11 +313,15 @@ Próxima tarea exacta:
 > RNF-06 dejan de tener sentido tal como están escritos, porque ya no hay
 > modelo ni cuantización en el camino de inferencia (ADR 0012).
 >
-> Pulido pendiente del dibujo, por orden de lo que más se nota: las solapas de
-> `collared shirt` son triángulos grandes y algo llamativos; las cabezas
-> calvas quedan muy abombadas; y las gafas resultan grandes en las siluetas
-> estrechas. Revisar siempre con `python scripts/render_gallery.py`, y
-> respetar las diez reglas de estilo del ADR 0012.
+> El pulido del dibujo está al día: no queda ningún defecto identificado
+> pendiente. Antes de dar por buena cualquier modificación de coordenadas,
+> revisar con `python scripts/render_gallery.py` y respetar las doce reglas de
+> estilo del ADR 0012.
+>
+> La tarea de producto pendiente sigue siendo **portar el dibujo a la app
+> Android** (Kotlin, primitivas de `Canvas` sobre la misma tabla de
+> coordenadas de 256 px) y validar en el TECNO KM5s que el resultado coincide
+> con el de Python y que el trazado tarda milisegundos.
 
 ## 2. Repositorio y entorno
 

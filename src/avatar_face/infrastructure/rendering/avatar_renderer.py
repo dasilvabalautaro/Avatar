@@ -217,6 +217,22 @@ def _draw_hair_back(
         )
 
 
+def _draw_scalp_highlight(fill: Painter, shape: FaceShape, skin: Rgb) -> None:
+    """Brillo de coronilla: sin él, una cabeza rapada parece una frente enorme."""
+    fill(
+        catmull_rom(
+            [
+                (CENTER - 30, shape.top + 26),
+                (CENTER - 6, shape.top + 9),
+                (CENTER + 22, shape.top + 20),
+                (CENTER - 2, shape.top + 32),
+            ],
+            samples=10,
+        ),
+        shade(skin, 0.12),
+    )
+
+
 def _draw_hair_front(
     fill: Painter, shape: FaceShape, attributes: AvatarAttributes, hair: Rgb
 ) -> None:
@@ -360,7 +376,9 @@ def _draw_mustache(
     fill: Painter, attributes: AvatarAttributes, hair: Rgb, skin: Rgb
 ) -> None:
     """Capa posterior a la boca: el bigote se apoya sobre el labio superior."""
-    if attributes.facial_hair not in {"mustache", "goatee", "full beard"}:
+    # La barba corta y la incipiente también cubren el labio superior: sin
+    # bigote quedan con aire de barba de collar.
+    if attributes.facial_hair == "none":
         return
     fill(
         catmull_rom(
@@ -465,6 +483,8 @@ class FlatVectorAvatarRenderer:
         self._draw_mouth(fill, attributes)
         _draw_mustache(fill, attributes, hair, skin)
         self._draw_freckles(draw, box, attributes, skin_shadow)
+        if attributes.hair_style == "bald":
+            _draw_scalp_highlight(fill, shape, skin)
         _draw_hair_front(fill, shape, attributes, hair)
         self._draw_glasses(draw, box, stroke, frame_width, shape, attributes)
         self._draw_earrings(draw, box, frame_width, shape, attributes)
@@ -532,16 +552,16 @@ class FlatVectorAvatarRenderer:
             fill([(CENTER - 22, top_y - 1), (CENTER, top_y + 30), (CENTER + 22, top_y - 1)], skin)
         elif garment == "collared shirt":
             fill(
-                [(CENTER - 15, top_y - 4), (CENTER, top_y + 20), (CENTER + 15, top_y - 4)],
-                shade(cloth, -0.22),
+                [(CENTER - 11, top_y - 4), (CENTER, top_y + 15), (CENTER + 11, top_y - 4)],
+                shade(cloth, -0.26),
             )
-            highlight = shade(cloth, 0.2)
+            highlight = shade(cloth, 0.14)
             for sign in (-1.0, 1.0):
                 fill(
                     [
-                        (CENTER + sign * 30, top_y - 6),
-                        (CENTER + sign * 2, top_y + 4),
-                        (CENTER + sign * 15, top_y + 24),
+                        (CENTER + sign * 25, top_y - 5),
+                        (CENTER + sign * 6, top_y + 1),
+                        (CENTER + sign * 12, top_y + 17),
                     ],
                     highlight,
                 )
@@ -762,36 +782,49 @@ class FlatVectorAvatarRenderer:
         if style == "none":
             return
         frame = hex_to_rgb(LINE)
+        # La montura se ajusta al hueco real entre el ojo y el borde del rostro:
+        # una talla fija resulta enorme sobre las siluetas estrechas.
+        edge = face_half_width(shape, EYE_Y)
+        half = min(22.0, max(15.0, (edge - EYE_DX) * 0.86))
+        center_y = EYE_Y + 2
         for sign in (-1.0, 1.0):
             cx = CENTER + sign * EYE_DX
             if style == "round":
+                # La montura redonda ocupa más superficie a igual anchura, así
+                # que se dibuja algo menor para no comerse el rostro.
+                radius = half * 0.87
                 draw.ellipse(
-                    box(cx - 24, EYE_Y - 22, cx + 24, EYE_Y + 22),
+                    box(cx - radius, center_y - radius, cx + radius, center_y + radius),
                     outline=frame,
-                    width=frame_width(3.5),
+                    width=frame_width(3.2),
                 )
             elif style == "rectangular":
                 draw.rounded_rectangle(
-                    box(cx - 26, EYE_Y - 15, cx + 26, EYE_Y + 15),
-                    radius=frame_width(5),
+                    box(cx - half - 1, center_y - half * 0.58, cx + half + 1,
+                        center_y + half * 0.58),
+                    radius=frame_width(4),
                     outline=frame,
-                    width=frame_width(3.5),
+                    width=frame_width(3.2),
                 )
             elif style == "square":
                 draw.rounded_rectangle(
-                    box(cx - 25, EYE_Y - 20, cx + 25, EYE_Y + 20),
-                    radius=frame_width(8),
+                    box(cx - half, center_y - half * 0.82, cx + half, center_y + half * 0.82),
+                    radius=frame_width(6),
                     outline=frame,
-                    width=frame_width(3.5),
+                    width=frame_width(3.2),
                 )
             else:  # sunglasses
                 draw.rounded_rectangle(
-                    box(cx - 26, EYE_Y - 19, cx + 26, EYE_Y + 17), radius=frame_width(10),
+                    box(cx - half - 1, center_y - half * 0.78, cx + half + 1,
+                        center_y + half * 0.7),
+                    radius=frame_width(8),
                     fill=frame,
                 )
-        stroke([(CENTER - 6, EYE_Y - 2), (CENTER + 6, EYE_Y - 2)], frame, 3.5)
-        stroke([(CENTER - shape.cheek, EYE_Y - 7), (CENTER - 50, EYE_Y - 3)], frame, 3.5)
-        stroke([(CENTER + 50, EYE_Y - 3), (CENTER + shape.cheek, EYE_Y - 7)], frame, 3.5)
+        bridge = EYE_DX - half
+        stroke([(CENTER - bridge, center_y - 3), (CENTER + bridge, center_y - 3)], frame, 3.2)
+        outer = EYE_DX + half
+        stroke([(CENTER - edge - 1, center_y - 5), (CENTER - outer, center_y - 2)], frame, 3.2)
+        stroke([(CENTER + outer, center_y - 2), (CENTER + edge + 1, center_y - 5)], frame, 3.2)
 
     @staticmethod
     def _draw_earrings(
