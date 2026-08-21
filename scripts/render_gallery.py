@@ -66,7 +66,32 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts/render-demo"))
     parser.add_argument("--image-size", type=int, default=256)
     parser.add_argument("--columns", type=int, default=4)
+    parser.add_argument(
+        "--dump-specs",
+        type=Path,
+        default=None,
+        help="escribe las especificaciones en JSON; el APK las lee como asset para "
+        "dibujar exactamente la misma galería y poder comparar ambos trazados",
+    )
     args = parser.parse_args()
+
+    if args.dump_specs is not None:
+        import json
+
+        args.dump_specs.parent.mkdir(parents=True, exist_ok=True)
+        args.dump_specs.write_text(
+            json.dumps(
+                [
+                    {**DEFAULT_ATTRIBUTES, **spec, "identifier": f"persona-{index + 1:02d}"}
+                    for index, spec in enumerate(PEOPLE)
+                ],
+                indent=2,
+                ensure_ascii=False,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        print(f"specs_ok personas={len(PEOPLE)} salida={args.dump_specs}")
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     renderer = FlatVectorAvatarRenderer(image_size=args.image_size)

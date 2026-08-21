@@ -1,6 +1,9 @@
 package com.avatarface.app
 
 import ai.onnxruntime.OnnxTensor
+import android.graphics.Bitmap
+import com.avatarface.app.render.AvatarAttributes
+import com.avatarface.app.render.AvatarRenderer
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.app.Activity
@@ -22,9 +25,11 @@ class MainActivity : Activity() {
         val modelAsset = intent.getStringExtra("model") ?: DEFAULT_MODEL_ASSET
         val profileOperators = intent.getBooleanExtra("profile_operators", false)
         val runs = intent.getIntExtra("runs", DEFAULT_RUNS).coerceIn(1, MAX_RUNS)
+        val mode = intent.getStringExtra("mode") ?: "benchmark"
         Thread {
             val payload = try {
-                runBenchmark(backend, modelAsset, runs, profileOperators)
+                if (mode == "render") renderGallery(runs) else
+                    runBenchmark(backend, modelAsset, runs, profileOperators)
             } catch (error: Throwable) {
                 JSONObject()
                     .put("schema_version", 1)
@@ -40,6 +45,59 @@ class MainActivity : Activity() {
             Log.i(TAG, "RESULT ${payload}")
             finish()
         }.start()
+    }
+
+    /**
+     * Dibuja la galería del ADR 0012 con el trazado nativo y mide el tiempo.
+     *
+     * Las especificaciones vienen del asset `gallery-specs.json`, generado por
+     * `scripts/render_gallery.py --dump-specs`, para que la app y Python
+     * dibujen exactamente las mismas personas y sus salidas sean comparables.
+     */
+    private fun renderGallery(runs: Int): JSONObject {
+        val specs = JSONArray(
+            assets.open(GALLERY_SPECS).use { it.readBytes().toString(Charsets.UTF_8) },
+        )
+        val renderer = AvatarRenderer(AVATAR_SIZE)
+        val directory = File(filesDir, "render").apply { mkdirs() }
+        directory.listFiles()?.forEach { it.delete() }
+        val durations = JSONArray()
+        val identifiers = JSONArray()
+        for (index in 0 until specs.length()) {
+            val spec = specs.getJSONObject(index)
+            val attributes = AvatarAttributes.fromJson(spec)
+            // Calentamiento fuera de la medida: la primera llamada carga clases.
+            renderer.render(attributes).recycle()
+            var best = Double.MAX_VALUE
+            var bitmap: Bitmap? = null
+            repeat(runs) {
+                val started = SystemClock.elapsedRealtimeNanos()
+                val rendered = renderer.render(attributes)
+                best = minOf(best, elapsedMilliseconds(started))
+                bitmap?.recycle()
+                bitmap = rendered
+            }
+            val identifier = spec.optString("identifier", "persona-%02d".format(index + 1))
+            File(directory, "$identifier.png").outputStream().use { stream ->
+                bitmap?.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            }
+            bitmap?.recycle()
+            durations.put(best)
+            identifiers.put(identifier)
+        }
+        val sorted = (0 until durations.length()).map { durations.getDouble(it) }.sorted()
+        return JSONObject()
+            .put("schema_version", 1)
+            .put("status", "ok")
+            .put("mode", "render")
+            .put("avatars", specs.length())
+            .put("image_size", AVATAR_SIZE)
+            .put("runs_per_avatar", runs)
+            .put("durations_ms", durations)
+            .put("identifiers", identifiers)
+            .put("median_ms", sorted[sorted.size / 2])
+            .put("max_ms", sorted.last())
+            .put("output_directory", directory.absolutePath)
     }
 
     private fun runBenchmark(
@@ -395,6 +453,8 @@ class MainActivity : Activity() {
         private const val STUDENT_MODEL = "avatarface-student-int8.onnx"
         private const val STUDENT_IMAGE_SIZE = 256
         private const val STUDENT_ATTRIBUTES = 9
+        private const val GALLERY_SPECS = "gallery-specs.json"
+        private const val AVATAR_SIZE = 256
         private const val RESULT_FILE = "benchmark-result.json"
         private const val DEFAULT_RUNS = 5
         private const val MAX_RUNS = 50

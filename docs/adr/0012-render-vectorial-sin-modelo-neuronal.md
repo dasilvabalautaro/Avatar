@@ -79,9 +79,17 @@ Frente a los requisitos no funcionales, medidos y no estimados:
   comercial, así que la persona tiene que sentirse tranquila con su
   representación o la descartará. De ahí las reglas de estilo del apartado
   siguiente.
-- Trabajo pendiente derivado: llevar el dibujo a la app Android (Kotlin), ya
-  sea reimplementando el trazado con las primitivas de Canvas o generando el
-  avatar en el lado nativo con la misma tabla de coordenadas.
+- El dibujo está portado a la app Android (`app/src/main/java/com/avatarface/app/render/`)
+  con las primitivas de `Canvas` sobre la misma tabla de coordenadas de 256 px.
+  **Medido en el TECNO KM5s: 18–20 ms de mediana por avatar** y una diferencia
+  media del 0.43 % frente al trazado de Python (peor caso 1.09 %), atribuible
+  al antialiasing distinto de Pillow y Skia. El flujo completo —generar
+  especificaciones, compilar, instalar, dibujar, bajar y comparar— es una sola
+  orden: `scripts/render-on-device.sh <serial>`.
+- **Los dos trazados son una sola especificación en dos lenguajes.** Cualquier
+  cambio de coordenadas debe replicarse en ambos y verificarse con
+  `scripts/compare_android_render.py`; el margen del comparador (6/255 de
+  media) absorbe el rasterizado pero delata cualquier rasgo desplazado.
 
 ## Reglas de estilo (revisión del 2026-08-21)
 

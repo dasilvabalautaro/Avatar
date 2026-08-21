@@ -292,12 +292,22 @@ Completado:
   anchura— y bigote también en la barba corta y la incipiente, que sin él
   quedaban con aire de barba de collar. Doce reglas de estilo en el ADR 0012.
 
+- **dibujo portado a Android** (2026-08-21): `render/{Geometry,Palette,
+  AvatarAttributes,AvatarRenderer}.kt` reproducen el trazado con primitivas de
+  `Canvas` sobre la misma tabla de coordenadas de 256 px. Medido en el TECNO
+  KM5s: **18–20 ms de mediana por avatar** (máximo 25 ms) y **0.43 % de
+  diferencia media** frente a Python (peor caso 1.09 %), sólo antialiasing.
+  Las especificaciones de la galería viajan como asset generado con
+  `render_gallery.py --dump-specs`, así que ambos lados dibujan a las mismas
+  personas. Flujo completo en una orden:
+  `scripts/render-on-device.sh 14254155BM000874`.
+
 En curso:
 
-- Fase 4 — llevar el dibujo a la app Android (Kotlin), reimplementando el
-  trazado con las primitivas de Canvas sobre la misma tabla de coordenadas de
-  256 px, y validar en el dispositivo. No hay trabajo de GPU pendiente ni
-  instancias que mantener encendidas.
+- Fase 4 — queda la **UI de producto**: la app sigue siendo instrumental (una
+  actividad que mide y vuelca PNG). Falta la pantalla donde la persona escribe
+  o elige atributos y ve su avatar, y la entrega del PNG a la aplicación
+  anfitriona.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -305,23 +315,15 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Portar `FlatVectorAvatarRenderer` a la app Android (Kotlin) usando las
-> primitivas de `Canvas` sobre la misma tabla de coordenadas de 256 px, y
-> validar en el TECNO KM5s que el resultado es idéntico al de Python (mismo
-> hash de imagen o diferencia de píxeles despreciable) y que el tiempo de
-> dibujo es de milisegundos. Después, revisar los requisitos: RNF-01 a
-> RNF-06 dejan de tener sentido tal como están escritos, porque ya no hay
-> modelo ni cuantización en el camino de inferencia (ADR 0012).
+> Construir la **UI de producto** en la app: pantalla que tome texto o
+> selectores de atributos, dibuje el avatar con `AvatarRenderer` y permita
+> guardarlo o entregarlo. El motor ya está: dibuja en 18–20 ms en el
+> dispositivo y coincide con el de Python.
 >
-> El pulido del dibujo está al día: no queda ningún defecto identificado
-> pendiente. Antes de dar por buena cualquier modificación de coordenadas,
-> revisar con `python scripts/render_gallery.py` y respetar las doce reglas de
-> estilo del ADR 0012.
->
-> La tarea de producto pendiente sigue siendo **portar el dibujo a la app
-> Android** (Kotlin, primitivas de `Canvas` sobre la misma tabla de
-> coordenadas de 256 px) y validar en el TECNO KM5s que el resultado coincide
-> con el de Python y que el trazado tarda milisegundos.
+> Al tocar coordenadas, cambiar **siempre las dos implementaciones** (Python y
+> Kotlin), revisar con `python scripts/render_gallery.py` y verificar con
+> `scripts/render-on-device.sh <serial>`, que compara ambos trazados. Respetar
+> las doce reglas de estilo del ADR 0012.
 
 ## 2. Repositorio y entorno
 
