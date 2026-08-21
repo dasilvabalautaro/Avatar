@@ -138,7 +138,12 @@ def _hair_cap(
 def _scalloped_crown(
     shape: FaceShape, width: float, volume: float, lobes: int, depth: float
 ) -> list[Point]:
-    """Arco de coronilla con lóbulos: da rizo sin recortar círculos sueltos."""
+    """Arco de coronilla con lóbulos: da rizo sin recortar círculos sueltos.
+
+    Pocos lóbulos y anchos: muchos lóbulos estrechos hacen que el spline
+    sobrepase en cada alternancia y el rizo se convierta en una corona de picos,
+    que es como se veía a tamaño de pantalla.
+    """
     base = ellipse_points((CENTER, shape.top + 30), width, 30 + volume, 180, 360, steps=lobes * 2)
     scalloped: list[Point] = []
     for index, (x, y) in enumerate(base):
@@ -248,7 +253,7 @@ def _draw_hair_front(
         return
     if style == "curly":
         width = max(shape.temple, face_half_width(shape, 142.0) * 0.94) + 5
-        crown = _scalloped_crown(shape, width, 13, lobes=10, depth=0.085)
+        crown = _scalloped_crown(shape, width, 13, lobes=6, depth=0.10)
         fill(
             catmull_rom(
                 [

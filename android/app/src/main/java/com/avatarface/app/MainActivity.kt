@@ -2,6 +2,7 @@ package com.avatarface.app
 
 import ai.onnxruntime.OnnxTensor
 import android.graphics.Bitmap
+import com.avatarface.app.render.AttributeParser
 import com.avatarface.app.render.AvatarAttributes
 import com.avatarface.app.render.AvatarRenderer
 import ai.onnxruntime.OrtEnvironment
@@ -87,6 +88,7 @@ class MainActivity : Activity() {
         }
         val sorted = (0 until durations.length()).map { durations.getDouble(it) }.sorted()
         return JSONObject()
+            .put("parser_mismatches", verifyParser())
             .put("schema_version", 1)
             .put("status", "ok")
             .put("mode", "render")
@@ -98,6 +100,58 @@ class MainActivity : Activity() {
             .put("median_ms", sorted[sorted.size / 2])
             .put("max_ms", sorted.last())
             .put("output_directory", directory.absolutePath)
+    }
+
+    /**
+     * Comprueba que el parser de texto nativo coincide con el de Python.
+     *
+     * Los casos vienen del asset `parser-cases.json`, generado desde Python con
+     * los atributos que espera; devolver una lista vacía significa que las dos
+     * implementaciones interpretan igual las mismas frases.
+     */
+    private fun verifyParser(): JSONArray {
+        val mismatches = JSONArray()
+        val cases = JSONArray(
+            assets.open(PARSER_CASES).use { it.readBytes().toString(Charsets.UTF_8) },
+        )
+        for (index in 0 until cases.length()) {
+            val case = cases.getJSONObject(index)
+            val text = case.getString("text")
+            val expected = case.getJSONObject("expected")
+            val actual = AttributeParser.parse(text)
+            val fields = mapOf(
+                "expression" to actual.expression,
+                "face_shape" to actual.faceShape,
+                "skin_tone" to actual.skinTone,
+                "hair_style" to actual.hairStyle,
+                "hair_color" to actual.hairColor,
+                "eye_color" to actual.eyeColor,
+                "eye_shape" to actual.eyeShape,
+                "accessory" to actual.accessory,
+                "background" to actual.background,
+                "brow_style" to actual.browStyle,
+                "nose_style" to actual.noseStyle,
+                "facial_hair" to actual.facialHair,
+                "glasses" to actual.glasses,
+                "earrings" to actual.earrings,
+                "freckles" to actual.freckles,
+                "clothing" to actual.clothing,
+                "clothing_color" to actual.clothingColor,
+            )
+            for ((key, value) in fields) {
+                val reference = expected.optString(key)
+                if (reference != value) {
+                    mismatches.put(
+                        JSONObject()
+                            .put("text", text)
+                            .put("attribute", key)
+                            .put("python", reference)
+                            .put("android", value),
+                    )
+                }
+            }
+        }
+        return mismatches
     }
 
     private fun runBenchmark(
@@ -454,6 +508,7 @@ class MainActivity : Activity() {
         private const val STUDENT_IMAGE_SIZE = 256
         private const val STUDENT_ATTRIBUTES = 9
         private const val GALLERY_SPECS = "gallery-specs.json"
+        private const val PARSER_CASES = "parser-cases.json"
         private const val AVATAR_SIZE = 256
         private const val RESULT_FILE = "benchmark-result.json"
         private const val DEFAULT_RUNS = 5

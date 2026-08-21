@@ -302,12 +302,29 @@ Completado:
   personas. Flujo completo en una orden:
   `scripts/render-on-device.sh 14254155BM000874`.
 
+- **pantalla de producto funcionando en el dispositivo** (2026-08-21):
+  `AvatarActivity` es ahora la actividad de lanzamiento —se escribe una
+  descripción y el avatar se redibuja en cada pulsación—. Probada escribiendo
+  de verdad en el TECNO KM5s: «smiling adult with curly pink hair and round
+  glasses» → **28 ms**; «serious adult with deep skin and full beard and thick
+  brows» → **34 ms**; y «a little boy with blue hair» **no dibuja nada** y
+  explica el rechazo (RF-09 comprobado en el dispositivo, no sólo en pruebas).
+  Capturas del teléfono en `artifacts/render-android/`.
+- el parser de texto y el filtro RF-09 están portados a Kotlin
+  (`render/AttributeParser.kt`, `render/AvatarPrompt.kt`): la app interpreta el
+  texto sin red. Su **paridad con Python se verifica automáticamente**: los
+  casos se congelan con `scripts/dump_parser_cases.py`, viajan como asset y la
+  app informa de cualquier interpretación distinta. Última corrida: **0
+  discrepancias** en 10 frases × 17 atributos.
+- rizos suavizados en ambos lenguajes (lóbulos anchos en vez de estrechos): a
+  tamaño de pantalla el spline sobrepasaba en cada alternancia y el rizo se
+  veía como una corona de picos.
+
 En curso:
 
-- Fase 4 — queda la **UI de producto**: la app sigue siendo instrumental (una
-  actividad que mide y vuelca PNG). Falta la pantalla donde la persona escribe
-  o elige atributos y ve su avatar, y la entrega del PNG a la aplicación
-  anfitriona.
+- Fase 4 — la pantalla existe y funciona; falta el acabado de producto:
+  selectores de atributos además del texto libre, guardar o entregar el PNG a
+  la aplicación anfitriona, y persistir el avatar elegido.
 
 Requisito rector nuevo (2026-08-15): el producto genera **sólo rostros de
 adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
@@ -315,14 +332,15 @@ adultos**; está prohibido generar avatares de menores de edad. Ver RF-09 en
 
 Próxima tarea exacta:
 
-> Construir la **UI de producto** en la app: pantalla que tome texto o
-> selectores de atributos, dibuje el avatar con `AvatarRenderer` y permita
-> guardarlo o entregarlo. El motor ya está: dibuja en 18–20 ms en el
-> dispositivo y coincide con el de Python.
+> Acabado de producto sobre `AvatarActivity`: selectores de atributos junto al
+> texto libre, guardar el avatar y entregarlo a la aplicación anfitriona, y
+> persistir la elección entre sesiones.
 >
-> Al tocar coordenadas, cambiar **siempre las dos implementaciones** (Python y
-> Kotlin), revisar con `python scripts/render_gallery.py` y verificar con
-> `scripts/render-on-device.sh <serial>`, que compara ambos trazados. Respetar
+> **Tres implementaciones deben moverse juntas**: el trazado y el parser están
+> en Python y en Kotlin, y los casos de referencia se generan desde Python. Al
+> tocar cualquiera de los tres, ejecutar
+> `scripts/render-on-device.sh 14254155BM000874`, que regenera los assets,
+> compila, dibuja en el dispositivo y verifica **ambas** paridades. Respetar
 > las doce reglas de estilo del ADR 0012.
 
 ## 2. Repositorio y entorno

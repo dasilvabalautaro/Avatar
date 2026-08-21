@@ -313,7 +313,7 @@ class AvatarRenderer(private val imageSize: Int = 256) {
             "undercut" -> fill(hairCap(shape, 15f, 104f, 96f), hair)
             "curly" -> {
                 val width = max(shape.temple, faceHalfWidth(shape, 142f) * 0.94f) + 5
-                val crown = scallopedCrown(shape, width, 13f, 10, 0.085f)
+                val crown = scallopedCrown(shape, width, 13f, 6, 0.10f)
                 val points = buildList {
                     add(Point(CENTER - width + 2, 142f))
                     add(Point(CENTER - width - 1, 108f))

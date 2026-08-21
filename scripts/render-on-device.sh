@@ -20,6 +20,7 @@ cd "$root"
 # Las especificaciones viajan como asset para que la app y Python dibujen
 # exactamente las mismas personas.
 python scripts/render_gallery.py --dump-specs android/app/src/main/assets/gallery-specs.json
+python scripts/dump_parser_cases.py --output android/app/src/main/assets/parser-cases.json
 
 ( cd android && ./gradlew --no-daemon :app:assembleDebug )
 
@@ -53,6 +54,15 @@ import json, sys
 data = json.load(open(sys.argv[1]))
 print(f"dispositivo: {data['avatars']} avatares de {data['image_size']} px, "
       f"mediana {data['median_ms']:.1f} ms, máximo {data['max_ms']:.1f} ms")
+# El parser de texto también existe en los dos lenguajes: sus casos vienen de
+# Python como asset y la app informa de cualquier interpretación distinta.
+mismatches = data.get("parser_mismatches", [])
+if mismatches:
+    for item in mismatches[:10]:
+        print(f"  parser difiere: {item['attribute']!r} en {item['text']!r}: "
+              f"python={item['python']!r} android={item['android']!r}")
+    raise SystemExit(f"parser_fallido: {len(mismatches)} discrepancias")
+print("parser_ok: las dos implementaciones interpretan igual las mismas frases")
 PY
 
 python scripts/compare_android_render.py --android "$output" --python artifacts/render-demo

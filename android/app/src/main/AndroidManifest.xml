@@ -5,13 +5,20 @@
         android:label="AvatarFace Benchmark"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <!-- Pantalla de producto: escribir y ver el avatar (ADR 0012). -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name=".AvatarActivity"
+            android:exported="true"
+            android:label="AvatarFace"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Actividad instrumental: benchmarks y volcado de la galería. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true" />
     </application>
 </manifest>
